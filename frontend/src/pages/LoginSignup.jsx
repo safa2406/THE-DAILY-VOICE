@@ -94,13 +94,13 @@ export default function LoginSignup() {
       {/* Brand Header */}
       <div className="text-center mb-8">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1c1917] to-[#2e2a27] text-[#faf7f2] flex items-center justify-center mx-auto mb-3.5 shadow-lg">
-          <Radio className="w-7 h-7 text-[#ea580c]" />
+          <Radio className="w-7 h-7 text-[#9a3412]" />
         </div>
         <h1 className="font-serif font-black text-3xl sm:text-4xl tracking-tight text-[#1c1917]">
           The Daily Voice
         </h1>
         <p className="text-xs sm:text-sm text-[#78716c] font-serif mt-1 italic">
-          Newspaper Broadsheets Narrated into Audiobooks
+          The Audio Broadsheet
         </p>
       </div>
 
@@ -108,13 +108,8 @@ export default function LoginSignup() {
       <div className="bg-white w-full max-w-md rounded-3xl border border-[#eae4d9] shadow-[0_16px_40px_rgba(28,25,23,0.06)] p-7 sm:p-9">
         <div className="text-center mb-6">
           <h2 className="font-serif font-bold text-2xl text-[#1c1917]">
-            {isSignUp ? 'Subscribe & Listen' : 'Subscriber Sign In'}
+            {isSignUp ? 'Create Account' : 'Sign In'}
           </h2>
-          <p className="text-xs text-[#78716c] font-serif mt-1">
-            {isSignUp
-              ? 'Join to unlock daily narrated morning editions'
-              : 'Enter your credentials to access your audio broadsheets'}
-          </p>
         </div>
 
         {error && (
@@ -199,7 +194,7 @@ export default function LoginSignup() {
             onClick={handleDemoLogin}
             className="text-xs font-mono font-semibold text-[#9a3412] hover:underline cursor-pointer"
           >
-            ⚡ Quick 1-Click Demo Reader Login
+            Demo Reader Login
           </button>
         </div>
 

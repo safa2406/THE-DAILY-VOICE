@@ -30,7 +30,7 @@ export default function ArticleCard({ article }) {
   return (
     <article
       onClick={() => navigate(`/listen/${article.id}`)}
-      className={`group p-5 sm:p-6 bg-white rounded-2xl border transition-all duration-200 cursor-pointer relative hover:shadow-[0_8px_24px_rgba(28,25,23,0.06)] hover:-translate-y-0.5 ${
+      className={`group p-5 sm:p-6 bg-white rounded-[20px] border transition-all duration-200 cursor-pointer relative shadow-[0_4px_20px_rgba(28,25,23,0.04)] hover:shadow-[0_8px_24px_rgba(28,25,23,0.08)] hover:-translate-y-0.5 ${
         isCurrent
           ? 'border-[#9a3412] bg-gradient-to-b from-white to-[#fffaf5] ring-2 ring-[#9a3412]/15 shadow-sm'
           : 'border-[#eae4d9] hover:border-[#d6cebf]'
@@ -38,12 +38,12 @@ export default function ArticleCard({ article }) {
     >
       {/* Category Kicker & Duration Header */}
       <div className="flex items-center justify-between gap-3 mb-2.5">
-        <span className="text-[10px] font-mono tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-[#f3ece2] text-[#9a3412] font-semibold">
+        <span className="text-xs font-mono tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-[#f3ece2] text-[#9a3412] font-semibold">
           {article.category}
         </span>
         <div className="flex items-center space-x-1.5">
-          <span className="flex items-center space-x-1 text-[11px] font-mono text-[#78716c]">
-            <Clock className="w-3 h-3 text-[#a8a29e]" />
+          <span className="flex items-center space-x-1 text-xs font-mono text-[#5c534a]">
+            <Clock className="w-3 h-3 text-[#5c534a]" />
             <span>{article.durationFormatted || '3 min'}</span>
           </span>
           <button
@@ -52,7 +52,7 @@ export default function ArticleCard({ article }) {
             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
               bookmarked
                 ? 'text-[#9a3412] bg-[#fbeee6]'
-                : 'text-[#a8a29e] hover:text-[#1c1917] hover:bg-[#f3ece2]'
+                : 'text-[#5c534a] hover:text-[#1c1917] hover:bg-[#f3ece2]'
             }`}
             title={bookmarked ? 'Saved in library' : 'Save article'}
           >
@@ -62,18 +62,18 @@ export default function ArticleCard({ article }) {
       </div>
 
       {/* Main Headline */}
-      <h3 className="font-serif font-bold text-lg sm:text-xl text-[#1c1917] leading-snug group-hover:text-[#9a3412] transition-colors mb-2">
+      <h3 className="font-serif font-bold text-lg sm:text-xl text-[#1c1917] leading-snug group-hover:text-[#9a3412] transition-colors mb-2 line-clamp-2">
         {article.title}
       </h3>
 
       {/* Editorial Summary Snippet */}
-      <p className="text-xs sm:text-sm text-[#57534e] line-clamp-2 leading-relaxed mb-4 font-serif">
+      <p className="text-xs sm:text-sm text-[#5c534a] line-clamp-2 leading-relaxed mb-4 font-serif">
         {article.summary}
       </p>
 
       {/* Bottom Byline and Play Action Bar */}
       <div className="flex items-center justify-between pt-3 border-t border-[#f3ece2] text-xs">
-        <span className="text-[11px] font-mono text-[#78716c] truncate max-w-[200px]">
+        <span className="text-xs font-mono text-[#5c534a] truncate max-w-[200px]">
           {article.publisher || article.newspaperName}
         </span>
 

@@ -167,8 +167,15 @@ export function LibraryProvider({ children }) {
 
   const recordProgress = useCallback(
     async (articleId, progressSeconds, durationSeconds, isCompleted = null, meta = {}) => {
-      if (!articleId) return;
-      const idStr = String(articleId);
+      const isEdition = Boolean(
+        meta.isEdition || meta.listeningMode === 'headlines' || (!articleId && meta.editionId)
+      );
+      const rawEd = meta.editionId || null;
+      const editionId = rawEd ? String(rawEd).replace('-headlines', '').split('•')[0].trim() : null;
+
+      if (!articleId && !editionId) return;
+      const idStr = articleId ? String(articleId) : null;
+      const sessionKey = idStr || `digest-${editionId}`;
 
       const thresholdReached =
         durationSeconds > 0 &&
@@ -177,43 +184,7 @@ export function LibraryProvider({ children }) {
       const listenedDeltaSeconds = Math.max(0, Number(meta.listenedDeltaSeconds) || 0);
       const localDate = meta.localDate || getLocalDateString();
 
-      // Optimistic update of local listeningHistory (sticky completion)
-      setListeningHistory((prev) => {
-        const existingIndex = prev.findIndex(
-          (item) => String(item.articleId || item.article_id) === idStr
-        );
-        const existing = existingIndex >= 0 ? prev[existingIndex] : null;
-        const effectiveCompleted = Boolean(existing?.isCompleted) || markCompleted;
-
-        const updated = {
-          ...(existing || {}),
-          id: existing?.id || idStr,
-          articleId: idStr,
-          article_id: idStr,
-          editionId: meta.editionId || existing?.editionId || existing?.edition_id || null,
-          edition_id: meta.editionId || existing?.editionId || existing?.edition_id || null,
-          listeningMode: meta.listeningMode || existing?.listeningMode || existing?.listening_mode || 'summary',
-          listening_mode: meta.listeningMode || existing?.listeningMode || existing?.listening_mode || 'summary',
-          language: meta.language || existing?.language || 'English',
-          progressSeconds: Math.round(progressSeconds * 10) / 10,
-          progress_seconds: Math.round(progressSeconds * 10) / 10,
-          durationSeconds: durationSeconds || existing?.durationSeconds || 180,
-          duration_seconds: durationSeconds || existing?.duration_seconds || 180,
-          isCompleted: effectiveCompleted,
-          is_completed: effectiveCompleted,
-          lastPlayedAt: 'Just now',
-          article: meta.article || existing?.article || null,
-        };
-
-        if (existingIndex >= 0) {
-          const next = [...prev];
-          next.splice(existingIndex, 1);
-          return [updated, ...next];
-        }
-        return [updated, ...prev];
-      });
-
-      // Backend persistence
+      // Backend persistence is the STRICT source of truth: no fake unpersisted optimistic cards
       try {
         const res = await updateListeningProgress({
           articleId: idStr,
@@ -222,25 +193,36 @@ export function LibraryProvider({ children }) {
           listenedDeltaSeconds,
           localDate,
           isCompleted: markCompleted,
-          editionId: meta.editionId,
-          listeningMode: meta.listeningMode,
+          editionId,
+          listeningMode: meta.listeningMode || (isEdition ? 'headlines' : 'summary'),
           language: meta.language,
           keepalive: Boolean(meta.keepalive),
+          isEdition,
         });
 
         if (!res.ok || !res.data?.data) {
           const msg = res.error || res.data?.message || `HTTP ${res.status}`;
-          console.error('[LibraryContext] Failed to persist listening progress:', msg);
+          console.error('[LibraryContext] Failed to persist listening progress to database:', msg);
           setSyncError(`History save failed: ${msg}`);
           return;
         }
 
         setSyncError(null);
         const serverItem = res.data.data;
+
+        // Authoritatively update listening history from persisted backend record
         setListeningHistory((prev) => {
-          const idx = prev.findIndex(
-            (item) => String(item.articleId || item.article_id) === idStr
-          );
+          const idx = prev.findIndex((item) => {
+            if (isEdition) {
+              const itemEd = item.editionId || item.edition_id;
+              const normItemEd = itemEd ? String(itemEd).replace('-headlines', '').split('•')[0].trim() : '';
+              return (
+                (item.listeningMode === 'headlines' || item.listening_mode === 'headlines') &&
+                normItemEd === editionId
+              );
+            }
+            return String(item.articleId || item.article_id) === idStr;
+          });
           if (idx >= 0) {
             const copy = [...prev];
             copy[idx] = {

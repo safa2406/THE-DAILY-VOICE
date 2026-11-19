@@ -34,9 +34,16 @@ export function getTimeOfDayGreeting(date = new Date()) {
 export function getUserDisplayName(user) {
   if (!user) return 'Reader';
 
-  // 1. Check user metadata fields
+  // 1. Check user direct fields and user metadata fields
   const meta = user.user_metadata || {};
-  const candidateName = meta.full_name || meta.name || meta.display_name;
+  const candidateName =
+    user.full_name ||
+    user.fullName ||
+    user.name ||
+    user.displayName ||
+    meta.full_name ||
+    meta.name ||
+    meta.display_name;
 
   if (candidateName && typeof candidateName === 'string' && candidateName.trim().length > 0) {
     return candidateName.trim();
@@ -60,4 +67,44 @@ export function getUserDisplayName(user) {
   }
 
   return 'Reader';
+}
+
+/**
+ * Extracts first name from authenticated user profile, metadata, or email.
+ * Falls back to empty string if unauthenticated or no name is resolvable.
+ *
+ * @param {object|null} user
+ * @returns {string}
+ */
+export function getUserFirstName(user) {
+  if (!user) return '';
+
+  const meta = user.user_metadata || {};
+  const candidateName =
+    user.full_name ||
+    user.fullName ||
+    user.name ||
+    user.displayName ||
+    meta.full_name ||
+    meta.name ||
+    meta.display_name;
+
+  if (candidateName && typeof candidateName === 'string' && candidateName.trim().length > 0) {
+    const firstWord = candidateName.trim().split(/\s+/)[0];
+    if (firstWord) {
+      return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+    }
+  }
+
+  if (user.email && typeof user.email === 'string') {
+    const localPart = user.email.split('@')[0];
+    if (localPart) {
+      const firstWord = localPart.replace(/[._-]+/g, ' ').trim().split(/\s+/)[0];
+      if (firstWord) {
+        return firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+      }
+    }
+  }
+
+  return '';
 }

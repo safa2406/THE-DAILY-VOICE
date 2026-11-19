@@ -17,10 +17,10 @@ export default function CategoryCard({ category, articleCount = 0, isSelected = 
     <button
       type="button"
       onClick={() => onSelect(category.id)}
-      className={`p-4 sm:p-5 rounded-2xl text-left border transition-all duration-200 flex flex-col justify-between w-full group cursor-pointer relative overflow-hidden ${
+      className={`p-4 sm:p-5 rounded-[20px] text-left border transition-all duration-200 flex flex-col justify-between w-full group cursor-pointer relative overflow-hidden ${
         isSelected
           ? 'bg-[#1c1917] text-white border-[#1c1917] shadow-lg ring-2 ring-[#9a3412]/40 -translate-y-0.5'
-          : 'bg-white text-[#1c1917] border-[#eae4d9] hover:border-[#d6cebf] hover:shadow-[0_4px_16px_rgba(28,25,23,0.06)] hover:-translate-y-0.5'
+          : 'bg-white text-[#1c1917] border-[#eae4d9] hover:border-[#d6cebf] shadow-[0_4px_20px_rgba(28,25,23,0.04)] hover:shadow-[0_8px_24px_rgba(28,25,23,0.08)] hover:-translate-y-0.5'
       }`}
     >
       {/* Top Icon & Count Header */}
@@ -28,17 +28,17 @@ export default function CategoryCard({ category, articleCount = 0, isSelected = 
         <div
           className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 ${
             isSelected
-              ? 'bg-gradient-to-br from-[#ea580c] to-[#c2410c] text-white shadow-xs'
-              : 'bg-[#f3ece2] text-[#9a3412] group-hover:bg-[#ea580c] group-hover:text-white'
+              ? 'bg-[#9a3412] text-white shadow-xs'
+              : 'bg-[#f3ece2] text-[#9a3412] group-hover:bg-[#9a3412] group-hover:text-white'
           }`}
         >
           <IconComponent className="w-5 h-5" />
         </div>
         <span
-          className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${
+          className={`text-xs font-mono px-2.5 py-0.5 rounded-full font-semibold ${
             isSelected
-              ? 'bg-[#2e2a27] text-[#a8a29e]'
-              : 'bg-[#f3ece2] text-[#78716c] group-hover:bg-[#e7dfd1]'
+              ? 'bg-[#2e2a27] text-[#d6cebf]'
+              : 'bg-[#f3ece2] text-[#5c534a] group-hover:bg-[#e7dfd1]'
           }`}
         >
           {articleCount}
@@ -57,13 +57,13 @@ export default function CategoryCard({ category, articleCount = 0, isSelected = 
           </h4>
           <ChevronRight
             className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${
-              isSelected ? 'text-[#ea580c]' : 'text-[#a8a29e]'
+              isSelected ? 'text-[#9a3412]' : 'text-[#5c534a]'
             }`}
           />
         </div>
         <p
-          className={`text-xs mt-1 line-clamp-1 font-serif ${
-            isSelected ? 'text-[#a8a29e]' : 'text-[#78716c]'
+          className={`text-xs mt-1 line-clamp-2 leading-snug font-serif ${
+            isSelected ? 'text-[#d6cebf]' : 'text-[#5c534a]'
           }`}
         >
           {category.description}
@@ -72,7 +72,7 @@ export default function CategoryCard({ category, articleCount = 0, isSelected = 
 
       {/* Active Selection Glow Dot */}
       {isSelected && (
-        <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#ea580c]" />
+        <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#9a3412]" />
       )}
     </button>
   );

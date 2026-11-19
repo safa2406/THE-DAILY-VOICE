@@ -87,6 +87,50 @@ def format_article_dict(article: Article) -> dict:
     }
 
 
+def format_headline_digest_dict(edition: Edition, duration_seconds: int = 240) -> dict:
+    """Formats an Edition model into a frontend-ready card representation for Headline Digest."""
+    newspaper_name = edition.newspaper_name if edition else "Daily Broadsheet"
+    pub_date = (
+        edition.publication_date.strftime("%b %d, %Y")
+        if edition and edition.publication_date
+        else "Nov 14, 2026"
+    )
+    dur = duration_seconds if duration_seconds > 0 else 240
+    mins = dur // 60
+    secs = dur % 60
+    duration_formatted = f"{mins}:{secs:02d}"
+    headline_title = f"{newspaper_name} - Headline Digest"
+
+    return {
+        "id": str(edition.id),
+        "article_id": None,
+        "articleId": None,
+        "title": headline_title,
+        "headline": headline_title,
+        "category": "Headline Digest",
+        "newspaperName": newspaper_name,
+        "newspaper_name": newspaper_name,
+        "publisher": newspaper_name,
+        "publishDate": pub_date,
+        "publish_date": pub_date,
+        "page_number": 1,
+        "pageNumber": 1,
+        "durationSeconds": dur,
+        "duration_seconds": dur,
+        "durationFormatted": duration_formatted,
+        "summary": f"Audio narration of key headlines from {newspaper_name}.",
+        "content": "",
+        "editionId": str(edition.id),
+        "edition_id": str(edition.id),
+        "edition_code": edition.edition_code if edition else None,
+        "audio_url": None,
+        "isHeadline": True,
+        "is_headline": True,
+        "isEdition": True,
+        "is_edition": True,
+    }
+
+
 def format_friendly_time(dt: datetime | None) -> str:
     """Formats a datetime into a human-friendly listening timeline string."""
     if not dt:
@@ -251,28 +295,46 @@ def get_listening_history():
     )
 
     history_list = []
+    seen_keys = set()
     for rec in records:
-        if not rec.article:
+        if rec.article:
+            item_dict = format_article_dict(rec.article)
+            ed_id = str(rec.edition_id) if rec.edition_id else (str(rec.article.edition_id) if rec.article and rec.article.edition_id else None)
+            dur_secs = rec.duration_seconds or rec.article.duration_seconds or 180
+            dedup_key = f"art-{rec.article_id}"
+        elif rec.listening_mode == "headlines" or not rec.article_id:
+            edition = rec.edition or (db.session.get(Edition, rec.edition_id) if rec.edition_id else None)
+            if not edition:
+                continue
+            dur_secs = rec.duration_seconds or 240
+            item_dict = format_headline_digest_dict(edition, dur_secs)
+            ed_id = str(rec.edition_id)
+            dedup_key = f"digest-{ed_id}"
+        else:
             continue
-        art_dict = format_article_dict(rec.article)
+
+        if dedup_key in seen_keys:
+            continue
+        seen_keys.add(dedup_key)
+
         history_list.append({
             "id": str(rec.id),
-            "articleId": str(rec.article_id),
-            "article_id": str(rec.article_id),
-            "editionId": str(rec.edition_id) if rec.edition_id else (str(rec.article.edition_id) if rec.article and rec.article.edition_id else None),
-            "edition_id": str(rec.edition_id) if rec.edition_id else (str(rec.article.edition_id) if rec.article and rec.article.edition_id else None),
+            "articleId": str(rec.article_id) if rec.article_id else None,
+            "article_id": str(rec.article_id) if rec.article_id else None,
+            "editionId": ed_id,
+            "edition_id": ed_id,
             "listeningMode": getattr(rec, "listening_mode", "summary") or "summary",
             "listening_mode": getattr(rec, "listening_mode", "summary") or "summary",
             "language": getattr(rec, "language", "English") or "English",
             "progressSeconds": round(rec.progress_seconds, 1),
             "progress_seconds": round(rec.progress_seconds, 1),
-            "durationSeconds": rec.duration_seconds or rec.article.duration_seconds or 180,
-            "duration_seconds": rec.duration_seconds or rec.article.duration_seconds or 180,
+            "durationSeconds": dur_secs,
+            "duration_seconds": dur_secs,
             "isCompleted": bool(rec.is_completed),
             "is_completed": bool(rec.is_completed),
             "lastPlayedAt": format_friendly_time(rec.last_played_at),
             "last_played_at": rec.last_played_at.isoformat() if rec.last_played_at else None,
-            "article": art_dict,
+            "article": item_dict,
         })
 
     return jsonify({
@@ -358,35 +420,88 @@ def compute_user_stats(user_id: str, local_date: str | None = None) -> dict:
 @user_activity_bp.route("/history", methods=["POST"])
 @require_auth
 def record_listening_history():
-    """Records or updates listening progress, actual playback time, and completion status for an article."""
+    """Records or updates listening progress, actual playback time, and completion status for an article or headline digest."""
     user_id = g.current_user["id"]
     ensure_user_in_db(user_id, g.current_user.get("email"), g.current_user.get("full_name"))
 
     data = request.get_json(silent=True) or {}
     article_id = data.get("article_id") or data.get("articleId")
-    if not article_id:
-        return jsonify({
-            "status": "error",
-            "code": "MISSING_ARTICLE_ID",
-            "message": "article_id is required",
-        }), 400
-
-    article = db.session.get(Article, article_id)
-    if not article:
-        return jsonify({
-            "status": "error",
-            "code": "ARTICLE_NOT_FOUND",
-            "message": f"Article with id '{article_id}' not found",
-        }), 404
-
-    progress_seconds = max(0.0, float(data.get("progress_seconds", data.get("progressSeconds", 0.0))))
-    duration_seconds = int(
-        data.get("duration_seconds", data.get("durationSeconds", article.duration_seconds or 180))
-    )
-    edition_id = data.get("edition_id") or data.get("editionId") or (str(article.edition_id) if article.edition_id else None)
+    edition_id = data.get("edition_id") or data.get("editionId")
     listening_mode = data.get("listening_mode") or data.get("listeningMode") or "summary"
     language = data.get("language") or "English"
     local_date = (data.get("local_date") or data.get("localDate") or "").strip() or datetime.now(timezone.utc).date().isoformat()
+
+    is_edition_flag = bool(data.get("is_edition") or data.get("isEdition"))
+    is_headline_digest = bool(is_edition_flag or (listening_mode == "headlines") or not article_id)
+
+    if is_headline_digest:
+        listening_mode = "headlines"
+        article_id = None
+        if not edition_id:
+            return jsonify({
+                "status": "error",
+                "code": "MISSING_EDITION_ID",
+                "message": "edition_id is required for headline digest listening history",
+            }), 400
+
+        # Robust edition lookup supporting UUID, edition_code, or composite display name
+        edition = None
+        raw_edition_id = str(edition_id).strip()
+        cleaned_id = raw_edition_id.replace("-headlines", "").strip()
+        if "•" in cleaned_id:
+            cleaned_id = cleaned_id.split("•")[0].strip()
+        if "—" in cleaned_id:
+            cleaned_id = cleaned_id.split("—")[0].strip()
+
+        try:
+            edition = db.session.get(Edition, cleaned_id)
+        except Exception:
+            edition = None
+
+        if not edition:
+            edition = Edition.query.filter_by(edition_code=cleaned_id).first()
+
+        if not edition and "•" in raw_edition_id:
+            name_candidate = raw_edition_id.split("•")[1].strip()
+            edition = Edition.query.filter_by(newspaper_name=name_candidate).first()
+
+        if not edition:
+            return jsonify({
+                "status": "error",
+                "code": "EDITION_NOT_FOUND",
+                "message": f"Edition with id '{edition_id}' not found",
+            }), 404
+
+        edition_id = str(edition.id)
+        article = None
+        article_id = None
+        duration_seconds = int(data.get("duration_seconds", data.get("durationSeconds", 240)))
+        if duration_seconds <= 0:
+            duration_seconds = 240
+    else:
+        if not article_id:
+            return jsonify({
+                "status": "error",
+                "code": "MISSING_ARTICLE_ID",
+                "message": "article_id is required",
+            }), 400
+        article = db.session.get(Article, article_id)
+        if not article:
+            return jsonify({
+                "status": "error",
+                "code": "ARTICLE_NOT_FOUND",
+                "message": f"Article with id '{article_id}' not found",
+            }), 404
+        if not edition_id and article.edition_id:
+            edition_id = str(article.edition_id)
+        edition = article.edition if article else None
+        duration_seconds = int(
+            data.get("duration_seconds", data.get("durationSeconds", article.duration_seconds or 180))
+        )
+        if duration_seconds <= 0:
+            duration_seconds = 180
+
+    progress_seconds = max(0.0, float(data.get("progress_seconds", data.get("progressSeconds", 0.0))))
 
     has_explicit_delta = ("listened_delta_seconds" in data) or ("listenedDeltaSeconds" in data)
     raw_delta = data.get("listened_delta_seconds", data.get("listenedDeltaSeconds", 0.0))
@@ -398,9 +513,30 @@ def record_listening_history():
             (progress_seconds / duration_seconds) >= 0.90
         )
 
-    existing = ListeningHistory.query.filter_by(
-        user_id=user_id, article_id=article_id
-    ).first()
+    if is_headline_digest:
+        existing = (
+            ListeningHistory.query.filter(
+                ListeningHistory.user_id == user_id,
+                ListeningHistory.edition_id == edition_id,
+                ListeningHistory.listening_mode == "headlines",
+            )
+            .order_by(ListeningHistory.last_played_at.desc())
+            .first()
+        )
+        if not existing:
+            existing = (
+                ListeningHistory.query.filter(
+                    ListeningHistory.user_id == user_id,
+                    ListeningHistory.edition_id == edition_id,
+                    ListeningHistory.article_id.is_(None),
+                )
+                .order_by(ListeningHistory.last_played_at.desc())
+                .first()
+            )
+    else:
+        existing = ListeningHistory.query.filter_by(
+            user_id=user_id, article_id=article_id
+        ).first()
 
     if existing:
         prev_progress = float(existing.progress_seconds or 0.0)
@@ -419,6 +555,9 @@ def record_listening_history():
         if language:
             existing.language = language
 
+        if is_headline_digest:
+            existing.article_id = None
+
         existing.total_listened_seconds = float(existing.total_listened_seconds or 0.0) + delta_sec
         if existing.daily_listened_date == local_date:
             existing.daily_listened_seconds = float(existing.daily_listened_seconds or 0.0) + delta_sec
@@ -429,11 +568,22 @@ def record_listening_history():
         existing.last_played_at = datetime.now(timezone.utc)
 
         if is_completed_explicit is not None:
-            # Sticky completion: once completed, replaying or seeking does not un-complete the article
+            # Sticky completion: once completed, replaying or seeking does not un-complete the session
             if bool(is_completed_explicit):
                 existing.is_completed = True
         elif threshold_reached:
             existing.is_completed = True
+
+        if is_headline_digest:
+            # Deduplicate any extra rows for this user & edition
+            duplicates = ListeningHistory.query.filter(
+                ListeningHistory.user_id == user_id,
+                ListeningHistory.edition_id == edition_id,
+                ListeningHistory.listening_mode == "headlines",
+                ListeningHistory.id != existing.id,
+            ).all()
+            for dup in duplicates:
+                db.session.delete(dup)
     else:
         if has_explicit_delta:
             delta_sec = max(0.0, min(float(raw_delta or 0.0), 3600.0))
@@ -448,7 +598,7 @@ def record_listening_history():
 
         existing = ListeningHistory(
             user_id=user_id,
-            article_id=article_id,
+            article_id=None if is_headline_digest else article_id,
             edition_id=edition_id,
             listening_mode=listening_mode,
             language=language,
@@ -462,17 +612,31 @@ def record_listening_history():
         )
         db.session.add(existing)
 
-    db.session.commit()
+    try:
+        db.session.commit()
+        db.session.refresh(existing)
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to commit listening history: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "code": "DB_COMMIT_ERROR",
+            "message": f"Database commit failed: {str(e)}",
+        }), 500
 
-    art_dict = format_article_dict(article)
+    item_dict = (
+        format_headline_digest_dict(edition, existing.duration_seconds)
+        if is_headline_digest
+        else format_article_dict(article)
+    )
     stats = compute_user_stats(user_id, local_date)
     return jsonify({
         "status": "success",
         "message": "Listening progress saved",
         "data": {
             "id": str(existing.id),
-            "articleId": str(existing.article_id),
-            "article_id": str(existing.article_id),
+            "articleId": str(existing.article_id) if existing.article_id else None,
+            "article_id": str(existing.article_id) if existing.article_id else None,
             "editionId": str(existing.edition_id) if existing.edition_id else None,
             "edition_id": str(existing.edition_id) if existing.edition_id else None,
             "listeningMode": getattr(existing, "listening_mode", "summary") or "summary",
@@ -489,7 +653,7 @@ def record_listening_history():
             "is_completed": bool(existing.is_completed),
             "lastPlayedAt": format_friendly_time(existing.last_played_at),
             "last_played_at": existing.last_played_at.isoformat() if existing.last_played_at else None,
-            "article": art_dict,
+            "article": item_dict,
         },
         "stats": stats,
     }), 200

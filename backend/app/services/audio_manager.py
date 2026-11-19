@@ -86,9 +86,28 @@ def get_or_generate_audio(
                 edition_id = article.edition_id
         if not edition_id:
             raise ValueError("Edition ID is required for 'headlines' mode.")
-        edition = db.session.get(Edition, edition_id)
+        raw_edition_id = str(edition_id).strip()
+        cleaned_id = raw_edition_id.replace("-headlines", "").strip()
+        if "•" in cleaned_id:
+            cleaned_id = cleaned_id.split("•")[0].strip()
+        if "—" in cleaned_id:
+            cleaned_id = cleaned_id.split("—")[0].strip()
+
+        try:
+            edition = db.session.get(Edition, cleaned_id)
+        except Exception:
+            edition = None
+
+        if not edition:
+            edition = Edition.query.filter_by(edition_code=cleaned_id).first()
+
+        if not edition and "•" in raw_edition_id:
+            name_candidate = raw_edition_id.split("•")[1].strip()
+            edition = Edition.query.filter_by(newspaper_name=name_candidate).first()
+
         if not edition:
             raise ValueError(f"Edition with ID '{edition_id}' not found.")
+        edition_id = str(edition.id)
 
     # 1. Compute content hash to ensure cache invalidation on content edits
     if mode == "headlines":

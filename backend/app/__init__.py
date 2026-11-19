@@ -35,6 +35,16 @@ def create_app(config_name: str | None = None) -> Flask:
         format="[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
     )
 
+    # Safe startup diagnostics (reports only whether configured, never key value or secret contents)
+    groq_key = app.config.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+    groq_configured = bool(groq_key and groq_key.strip())
+    groq_model = app.config.get("GROQ_MODEL") or os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    auth_strategy = app.config.get("SUPABASE_AUTH_STRATEGY", "unknown")
+    app.logger.info(
+        f"[STARTUP] Environment: {config_name} | Auth Strategy: {auth_strategy.upper()} | "
+        f"Groq AI: {'CONFIGURED' if groq_configured else 'NOT CONFIGURED'} (Model: {groq_model})"
+    )
+
     # Initialize Extensions
     db.init_app(app)
     migrate.init_app(app, db)
@@ -59,12 +69,14 @@ def create_app(config_name: str | None = None) -> Flask:
     from app.routes.editions import editions_bp
     from app.routes.audio import audio_bp
     from app.routes.user_activity import user_activity_bp
+    from app.routes.ai import ai_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(editions_bp)
     app.register_blueprint(audio_bp, url_prefix="/api/audio")
     app.register_blueprint(user_activity_bp)
+    app.register_blueprint(ai_bp)
 
     # Register Custom CLI Commands
     from app.commands import register_commands

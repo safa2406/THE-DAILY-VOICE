@@ -287,7 +287,7 @@ export default function QRScannerModal({ isOpen, onClose }) {
       aria-modal="true"
       aria-labelledby="qr-modal-title"
     >
-      <div className="bg-[#fbf9f5] w-full max-w-md rounded-2xl shadow-2xl border border-[#eae4d9] overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-[#fbf9f5] w-full max-w-md rounded-[20px] shadow-[0_20px_50px_rgba(28,25,23,0.2)] border border-[#eae4d9] overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="p-4 border-b border-[#eae4d9] flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -298,7 +298,7 @@ export default function QRScannerModal({ isOpen, onClose }) {
               <h3 id="qr-modal-title" className="font-serif font-bold text-[#1c1917] text-base">
                 Scan Newspaper QR
               </h3>
-              <p className="text-[11px] font-mono text-[#78716c]">Position QR code within the frame</p>
+              <p className="text-xs font-mono text-[#5c534a]">Position QR code within the frame</p>
             </div>
           </div>
           <button
@@ -306,7 +306,7 @@ export default function QRScannerModal({ isOpen, onClose }) {
               stopScanner();
               onClose();
             }}
-            className="p-2 text-[#78716c] hover:text-[#1c1917] rounded-full hover:bg-[#f3ece2] transition-colors cursor-pointer"
+            className="p-2 text-[#5c534a] hover:text-[#1c1917] rounded-full hover:bg-[#f3ece2] transition-colors cursor-pointer"
             aria-label="Close scanner"
           >
             <X className="w-5 h-5" />
@@ -346,8 +346,8 @@ export default function QRScannerModal({ isOpen, onClose }) {
             {/* Scanning Reticle & Laser Overlay */}
             {scanStatus === 'scanning' && (
               <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-                <div className="w-48 h-48 border-2 border-dashed border-[#ea580c]/80 rounded-xl pointer-events-none shadow-[0_0_15px_rgba(234,88,12,0.3)] animate-pulse" />
-                <div className="w-44 h-0.5 bg-[#ea580c] shadow-[0_0_10px_#ea580c] animate-bounce -mt-24 pointer-events-none" />
+                <div className="w-48 h-48 border-2 border-dashed border-[#9a3412]/80 rounded-xl pointer-events-none shadow-[0_0_15px_rgba(154,52,18,0.3)] animate-pulse" />
+                <div className="w-44 h-0.5 bg-[#9a3412] shadow-[0_0_10px_#9a3412] animate-bounce -mt-24 pointer-events-none" />
                 <p className="absolute bottom-3 text-[10px] font-mono text-white bg-black/60 px-2.5 py-0.5 rounded-full pointer-events-none">
                   Align viewfinder with printed QR
                 </p>
@@ -357,7 +357,7 @@ export default function QRScannerModal({ isOpen, onClose }) {
             {/* Initializing Spinner */}
             {scanStatus === 'initializing' && (
               <div className="absolute inset-0 bg-[#1c1917] flex flex-col items-center justify-center text-[#d6cebf] p-4 text-center">
-                <Loader2 className="w-8 h-8 text-[#ea580c] animate-spin mb-2" />
+                <Loader2 className="w-8 h-8 text-[#9a3412] animate-spin mb-2" />
                 <p className="text-xs font-mono">Initializing camera feed...</p>
               </div>
             )}
@@ -365,9 +365,9 @@ export default function QRScannerModal({ isOpen, onClose }) {
             {/* Verifying Spinner */}
             {scanStatus === 'verifying' && (
               <div className="absolute inset-0 bg-[#1c1917]/90 backdrop-blur-xs flex flex-col items-center justify-center text-white p-4 text-center animate-in fade-in">
-                <Loader2 className="w-8 h-8 text-[#ea580c] animate-spin mb-2" />
+                <Loader2 className="w-8 h-8 text-[#9a3412] animate-spin mb-2" />
                 <p className="text-sm font-serif font-bold">Verifying Newspaper QR...</p>
-                <p className="text-[11px] font-mono text-[#a8a29e] mt-1">Connecting to edition registry...</p>
+                <p className="text-xs font-mono text-[#d6cebf] mt-1">Connecting to edition registry...</p>
               </div>
             )}
 
@@ -385,8 +385,8 @@ export default function QRScannerModal({ isOpen, onClose }) {
             {/* Camera Error / Inactive Fallback within viewfinder */}
             {scanStatus === 'error' && (
               <div className="absolute inset-0 bg-[#1c1917] flex flex-col items-center justify-center text-center p-4">
-                <Camera className="w-10 h-10 text-[#78716c] mx-auto mb-2 opacity-60" />
-                <p className="text-xs text-[#a8a29e] mb-3 font-mono">Camera scanner stopped</p>
+                <Camera className="w-10 h-10 text-[#5c534a] mx-auto mb-2 opacity-60" />
+                <p className="text-xs text-[#d6cebf] mb-3 font-mono">Camera scanner stopped</p>
                 <button
                   type="button"
                   onClick={() => startCamera(selectedCameraId)}
@@ -405,7 +405,7 @@ export default function QRScannerModal({ isOpen, onClose }) {
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
               <div className="flex-1">
                 <p className="font-semibold">Scanner Alert</p>
-                <p className="text-[11px] text-rose-700 mt-0.5">{errorMessage}</p>
+                <p className="text-xs text-rose-700 mt-0.5">{errorMessage}</p>
               </div>
             </div>
           )}
@@ -426,7 +426,7 @@ export default function QRScannerModal({ isOpen, onClose }) {
 
           {/* QR Image Upload Fallback */}
           <div className="mt-4 pt-4 border-t border-[#eae4d9] w-full text-center">
-            <p className="text-xs text-[#78716c] mb-2 font-mono">
+            <p className="text-xs text-[#5c534a] mb-2 font-mono">
               Unable to use camera? Upload a QR image file
             </p>
             <label className="inline-flex items-center space-x-2 px-4 py-2 bg-white hover:bg-[#f3ece2] border border-[#eae4d9] rounded-lg text-xs font-medium text-[#1c1917] cursor-pointer shadow-xs transition-colors">

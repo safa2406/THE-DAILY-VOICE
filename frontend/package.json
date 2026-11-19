@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "test": "node --test tests/qr_scanner.test.js tests/pdf_uploader.test.js tests/library_and_history.test.js",
+    "test": "node --test tests/qr_scanner.test.js tests/pdf_uploader.test.js tests/library_and_history.test.js tests/ask_ai.test.js tests/greeting.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -60,6 +60,18 @@ def get_cache_storage_dir() -> str:
     return base_dir
 
 
+def get_groq_api_key() -> str | None:
+    """
+    Safely retrieves the configured GROQ_API_KEY from environment or Flask config.
+    Strips any surrounding whitespace or enclosing quotes.
+    """
+    key = os.getenv("GROQ_API_KEY")
+    if key and isinstance(key, str):
+        cleaned = key.strip().strip("\"'")
+        return cleaned if cleaned else None
+    return None
+
+
 def _load_persistent_json_cache(filename: str) -> dict[str, str]:
     """Loads a JSON cache file from disk into a dictionary."""
     cache_dir = get_cache_storage_dir()
@@ -236,7 +248,7 @@ def generate_article_summary(headline: str, content: str) -> str:
     if cached:
         return cached
 
-    groq_api_key = os.getenv("GROQ_API_KEY")
+    groq_api_key = get_groq_api_key()
     groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     if groq_api_key:
         try:
@@ -390,7 +402,7 @@ def _translate_with_groq(text: str, target_language: str, max_retries: int = 2) 
     - Retries on temporary rate limits or timeouts with backoff.
     - Validates output contains authentic native Indic script.
     """
-    groq_api_key = os.getenv("GROQ_API_KEY")
+    groq_api_key = get_groq_api_key()
     if not groq_api_key:
         raise RuntimeError("GROQ_API_KEY is not configured")
 
@@ -543,3 +555,118 @@ def generate_headlines_script(newspaper_name: str, headlines: list[Any], languag
         script = translate_text(script, language)
 
     return script
+
+
+def ask_ai_about_article(
+    article: Any,
+    question: str,
+    history: list[dict[str, str]] | None = None,
+    language: str = "English",
+) -> dict[str, Any]:
+    """
+    Answers user questions about a specific newspaper article using Groq LLM.
+    Strictly grounds answers in the provided database article context.
+    Distinguishes article facts from broader background knowledge.
+    Admits lack of information and never fabricates facts.
+    Supports English, Hindi, Kannada, Telugu, and Marathi.
+    """
+    groq_api_key = get_groq_api_key()
+    if not groq_api_key:
+        raise RuntimeError("GROQ_API_KEY is not configured")
+
+    # Validate language
+    all_langs = ["English"] + list(SUPPORTED_INDIC_LANGS.keys())
+    matched_lang = next((l for l in all_langs if l.lower() == language.lower()), None)
+    if not matched_lang:
+        raise ValueError(f"Unsupported language '{language}'. Supported: {', '.join(all_langs)}")
+    language = matched_lang
+
+    clean_question = (question or "").strip()
+    if not clean_question:
+        raise ValueError("Question cannot be empty.")
+    if len(clean_question) > 1000:
+        raise ValueError("Question exceeds maximum limit of 1000 characters.")
+
+    # Format article context strictly from database record
+    newspaper_name = article.edition.newspaper_name if getattr(article, "edition", None) and article.edition.newspaper_name else "The Daily Voice"
+    pub_date = str(article.edition.publication_date) if getattr(article, "edition", None) and article.edition.publication_date else "Unknown"
+    category = getattr(article, "category", "Broadsheet")
+    headline = getattr(article, "headline", "Untitled Article")
+    summary = getattr(article, "summary", "") or "No summary available."
+    content = getattr(article, "content", "")
+
+    # Language-specific instruction
+    if language == "English":
+        lang_instruction = "Respond in clear, natural, accessible English."
+    elif language == "Hindi":
+        lang_instruction = "CRITICAL: You must answer entirely in fluent Hindi using native Devanagari script (हिन्दी). Do NOT use English or Latin transliteration."
+    elif language == "Kannada":
+        lang_instruction = "CRITICAL: You must answer entirely in fluent Kannada using native Kannada script (ಕನ್ನಡ). Do NOT use English or Latin transliteration."
+    elif language == "Telugu":
+        lang_instruction = "CRITICAL: You must answer entirely in fluent Telugu using native Telugu script (తెలుగు). Do NOT use English or Latin transliteration."
+    elif language == "Marathi":
+        lang_instruction = "CRITICAL: You must answer entirely in fluent Marathi using native Devanagari script (मराठी). Do NOT use English or Latin transliteration."
+    else:
+        lang_instruction = f"Respond in {language}."
+
+    system_prompt = (
+        "You are the AI News Assistant for The Daily Voice, an intelligent broadsheet newspaper audio and reading application.\n"
+        "Your role is to explain news, provide context, and answer readers' and listeners' questions about the current newspaper article.\n\n"
+        "NEWSPAPER ARTICLE CONTEXT:\n"
+        f"- Article ID: {getattr(article, 'id', '')}\n"
+        f"- Newspaper: {newspaper_name}\n"
+        f"- Publication Date: {pub_date}\n"
+        f"- Category / Desk: {category}\n"
+        f"- Headline: {headline}\n"
+        f"- Editorial Summary: {summary}\n"
+        f"- Full Broadsheet Content:\n{content[:5000]}\n\n"
+        "CORE EDITORIAL GUIDELINES:\n"
+        "1. Strictly Ground in Context: Base your answers primarily on the facts, events, and statements in this article.\n"
+        "2. Distinguish Article Facts from Background: Clearly distinguish facts explicitly reported in this article from any broader historical or general background knowledge you supply (for example, state 'According to the article...' vs 'For broader context...').\n"
+        "3. Explain and Clarify: Explain unfamiliar terms, jargon, acronyms, organizations, people, places, and events in simple, everyday language.\n"
+        "4. Information Gaps: If the article does not contain enough information to answer a question, clearly and honestly admit it (e.g. 'The article does not contain details about...'). NEVER fabricate, speculate, or invent facts, quotes, numbers, or dates.\n"
+        "5. Conciseness: Avoid overly long or rambling responses. Keep explanations focused, clear, and easy to read or listen to (typically 2-4 short paragraphs or crisp bullet points).\n"
+        f"6. Response Language: {lang_instruction}\n"
+        "7. Follow-up Conversations: You will be provided with the recent conversation history for this specific article. Answer follow-up questions contextually, continuing to use this article as the primary ground truth.\n"
+    )
+
+    # Format history (up to last 10 messages, each max 1500 chars)
+    formatted_messages = [{"role": "system", "content": system_prompt}]
+    if history and isinstance(history, list):
+        for msg in history[-10:]:
+            if isinstance(msg, dict) and msg.get("role") in ["user", "assistant"] and msg.get("content"):
+                role = msg["role"]
+                cnt = str(msg["content"])[:1500].strip()
+                if cnt:
+                    formatted_messages.append({"role": role, "content": cnt})
+
+    formatted_messages.append({"role": "user", "content": clean_question})
+
+    groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    from groq import Groq
+    client = Groq(api_key=groq_api_key)
+
+    try:
+        completion = client.chat.completions.create(
+            model=groq_model,
+            messages=formatted_messages,
+            temperature=0.3,
+            max_tokens=800,
+            timeout=25.0,
+        )
+        answer = completion.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"Groq Chat Completion failed: {e}")
+        raise RuntimeError(f"Groq AI service error: {str(e)}")
+
+    if not answer:
+        raise RuntimeError("Groq AI service returned an empty response.")
+
+    return {
+        "answer": answer,
+        "article_id": str(article.id),
+        "headline": headline,
+        "language": language,
+        "model": groq_model,
+    }
+

@@ -114,9 +114,14 @@ def require_auth(f):
     """
     Route decorator requiring a valid Supabase JWT Bearer token.
     Enforces asymmetric JWKS key validation, issuer, audience, and UUID subject.
+    Allows CORS preflight OPTIONS requests to pass through unhindered.
     """
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Allow browser CORS preflight OPTIONS requests without requiring Authorization
+        if request.method == "OPTIONS":
+            return f(*args, **kwargs)
+
         auth_header = request.headers.get("Authorization", "")
         if not auth_header:
             return jsonify({
@@ -147,7 +152,7 @@ def require_auth(f):
             return jsonify({
                 "status": "error",
                 "code": "TOKEN_EXPIRED",
-                "message": "Authentication token has expired.",
+                "message": "Authentication session has expired. Please sign in again.",
             }), 401
         except jwt.InvalidSignatureError:
             return jsonify({
@@ -174,11 +179,19 @@ def require_auth(f):
                 "code": "INVALID_SUBJECT" if "UUID" in str(e) else "AUTH_CONFIG_ERROR",
                 "message": str(e),
             }), 401
-        except jwt.PyJWTError as e:
+        except jwt.DecodeError as e:
+            logger.warning(f"JWT decoding failed: {e}")
             return jsonify({
                 "status": "error",
                 "code": "INVALID_TOKEN",
-                "message": f"Token validation failed: {str(e)}",
+                "message": "Authentication token is malformed or invalid. Please sign in again.",
+            }), 401
+        except jwt.PyJWTError as e:
+            logger.warning(f"JWT validation failed: {e}")
+            return jsonify({
+                "status": "error",
+                "code": "INVALID_TOKEN",
+                "message": "Authentication token validation failed. Please sign in again.",
             }), 401
 
         return f(*args, **kwargs)

@@ -421,7 +421,7 @@ export async function getListeningHistory() {
 }
 
 export async function updateListeningProgress({
-  articleId,
+  articleId = null,
   progressSeconds = 0,
   durationSeconds = 0,
   listenedDeltaSeconds = 0,
@@ -431,6 +431,7 @@ export async function updateListeningProgress({
   listeningMode = 'summary',
   language = 'English',
   keepalive = false,
+  isEdition = false,
 }) {
   const url = `${API_BASE_URL}/api/history`;
   try {
@@ -439,14 +440,15 @@ export async function updateListeningProgress({
       'Content-Type': 'application/json',
     };
     const body = {
-      article_id: articleId,
+      article_id: articleId || null,
       progress_seconds: progressSeconds,
       duration_seconds: durationSeconds,
       listened_delta_seconds: Math.max(0, Number(listenedDeltaSeconds) || 0),
       local_date: localDate || getLocalDateString(),
-      edition_id: editionId,
+      edition_id: editionId || null,
       listening_mode: listeningMode,
       language: language,
+      is_edition: Boolean(isEdition || listeningMode === 'headlines'),
     };
     if (isCompleted !== null && isCompleted !== undefined) {
       body.is_completed = Boolean(isCompleted);
@@ -618,6 +620,135 @@ export async function toggleBookmarkApi(articleId) {
       ok: false,
       status: 0,
       error: error.message || 'Network error toggling bookmark',
+      data: null,
+    };
+  }
+}
+
+export async function askAiAboutArticle({ articleId, question, history = [], language = 'English' }) {
+  const url = `${API_BASE_URL}/api/articles/${encodeURIComponent(articleId)}/ask`;
+  try {
+    const headers = {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json',
+    };
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        question,
+        history,
+        language,
+      }),
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      let friendlyError = data?.message;
+      if (response.status === 401) {
+        if (data?.code === 'TOKEN_EXPIRED') {
+          friendlyError = 'Your authentication session has expired. Please sign in again to continue.';
+        } else if (data?.code === 'INVALID_TOKEN' || data?.code === 'INVALID_SIGNATURE') {
+          friendlyError = data?.message || 'Authentication token is invalid. Please sign in again.';
+        } else if (data?.code === 'AUTH_HEADER_MISSING' || data?.code === 'INVALID_AUTH_FORMAT') {
+          friendlyError = 'Authentication session required. Please sign in to ask questions about news.';
+        } else if (!friendlyError) {
+          friendlyError = 'Authentication session missing or expired. Please sign in to ask questions about news.';
+        }
+      } else if (!friendlyError) {
+        if (response.status === 403) {
+          friendlyError = 'Access denied. You do not have permission to ask questions.';
+        } else if (response.status === 404) {
+          friendlyError = `Article with ID "${articleId}" was not found in the database. Please select a valid newspaper article.`;
+        } else if (response.status === 429) {
+          friendlyError = 'Groq AI rate limit reached. Please wait a moment before asking another question.';
+        } else if (response.status === 503) {
+          friendlyError = 'Groq AI service is not configured (missing GROQ_API_KEY). Please configure GROQ_API_KEY in the backend environment.';
+        } else if (response.status >= 500) {
+          friendlyError = 'The AI service encountered an internal error. Please try again.';
+        } else {
+          friendlyError = `Request failed with HTTP status ${response.status}.`;
+        }
+      }
+      console.error(`[Ask AI API Error] HTTP ${response.status} from ${url}:`, {
+        code: data?.code,
+        message: friendlyError,
+      });
+      return {
+        ok: false,
+        status: response.status,
+        data,
+        error: friendlyError,
+      };
+    }
+
+    return {
+      ok: true,
+      status: response.status,
+      data,
+      error: null,
+    };
+  } catch (error) {
+    console.error(`[Ask AI API Network/CORS Error] Failed to connect to ${url}:`, error.message);
+    let networkErrorMessage = error.message;
+    if (error.message?.toLowerCase().includes('failed to fetch') || error.name === 'TypeError') {
+      networkErrorMessage =
+        `Unable to reach The Daily Voice backend server (${API_BASE_URL}). Please verify that the Flask server is running on port 5000 and CORS permits this origin.`;
+    }
+    return {
+      ok: false,
+      status: 0,
+      error: networkErrorMessage,
+      data: null,
+    };
+  }
+}
+
+export async function synthesizeSpeech({ text, language = 'English' }) {
+  const url = `${API_BASE_URL}/api/audio/synthesize`;
+  try {
+    const headers = {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json',
+    };
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        text,
+        language,
+      }),
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const err = data?.message || `Synthesis failed with status ${response.status}`;
+      console.error(`[Synthesize API Error] HTTP ${response.status} from ${url}:`, err);
+      return {
+        ok: false,
+        status: response.status,
+        data,
+        error: err,
+      };
+    }
+
+    return {
+      ok: true,
+      status: response.status,
+      data,
+      error: null,
+    };
+  } catch (error) {
+    console.error(`[Synthesize API Network Error] Failed to connect to ${url}:`, error.message);
+    let networkErrorMessage = error.message;
+    if (error.message?.toLowerCase().includes('failed to fetch') || error.name === 'TypeError') {
+      networkErrorMessage =
+        `Unable to reach speech synthesis service at ${API_BASE_URL}. Please ensure the backend is running.`;
+    }
+    return {
+      ok: false,
+      status: 0,
+      error: networkErrorMessage,
       data: null,
     };
   }

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from flask import Blueprint, jsonify, current_app
 from sqlalchemy import text
@@ -25,6 +26,8 @@ def health_check():
         db_error = str(e)
 
     supabase_configured = SupabaseService.is_configured()
+    groq_key = current_app.config.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+    groq_configured = bool(groq_key and groq_key.strip())
 
     overall_status = "healthy" if db_status == "connected" else "degraded"
 
@@ -42,6 +45,10 @@ def health_check():
             "supabase": {
                 "configured": supabase_configured,
                 "url": current_app.config.get("SUPABASE_URL", "") if supabase_configured else "not_configured",
+            },
+            "groq": {
+                "configured": groq_configured,
+                "model": current_app.config.get("GROQ_MODEL", "openai/gpt-oss-120b"),
             },
         },
     }

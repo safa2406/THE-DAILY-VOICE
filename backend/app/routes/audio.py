@@ -1,9 +1,11 @@
 import os
+import hashlib
 import logging
 from flask import Blueprint, jsonify, request, send_from_directory, abort, current_app
 from werkzeug.utils import secure_filename
 from app.services.audio_manager import get_or_generate_audio, get_audio_storage_dir
-from app.services.tts_service import SUPPORTED_LANGUAGES
+from app.services.tts_service import SUPPORTED_LANGUAGES, synthesize_speech
+from app.services.ai_service import clean_text_for_narration
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +80,66 @@ def generate_audio():
         return jsonify({
             "status": "error",
             "message": f"Failed to generate audio narration: {str(e)}",
+        }), 500
+
+
+@audio_bp.route("/synthesize", methods=["POST", "OPTIONS"])
+def synthesize_custom_audio():
+    """
+    POST /api/audio/synthesize
+    Synthesizes custom text (such as AI responses) into MP3 speech audio
+    using existing TTS infrastructure and caches to disk.
+    """
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    language = (data.get("language") or "English").strip()
+
+    if not text:
+        return jsonify({
+            "status": "error",
+            "message": "Text content is required for speech synthesis.",
+        }), 400
+
+    if len(text) > 4000:
+        return jsonify({
+            "status": "error",
+            "message": "Text content exceeds maximum limit of 4000 characters.",
+        }), 400
+
+    lang_match = next((l for l in SUPPORTED_LANGUAGES if l.lower() == language.lower()), None)
+    if not lang_match:
+        return jsonify({
+            "status": "error",
+            "message": f"Unsupported language '{language}'. Supported: {', '.join(SUPPORTED_LANGUAGES.keys())}",
+        }), 400
+    language = lang_match
+
+    try:
+        clean_text = clean_text_for_narration(text)
+        content_hash = hashlib.sha256(f"{language}:{clean_text}".encode("utf-8")).hexdigest()[:24]
+        filename = f"ai_resp_{content_hash}.mp3"
+        storage_dir = get_audio_storage_dir()
+        file_path = os.path.join(storage_dir, filename)
+
+        if not os.path.exists(file_path):
+            synthesize_speech(clean_text, language, file_path)
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "audio_url": f"/api/audio/stream/{filename}",
+                "filename": filename,
+                "language": language,
+            },
+        }), 200
+    except Exception as e:
+        logger.error(f"Error synthesizing custom speech: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to synthesize audio: {str(e)}",
         }), 500
 
 

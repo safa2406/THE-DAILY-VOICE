@@ -29,12 +29,12 @@ class ListeningHistory(db.Model):
         index=True,
         doc="Foreign key to the User",
     )
-    article_id: Mapped[str] = mapped_column(
+    article_id: Mapped[str | None] = mapped_column(
         Uuid(as_uuid=False),
         ForeignKey("articles.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
-        doc="Foreign key to the Article",
+        doc="Foreign key to the Article (nullable for edition-level headline digests)",
     )
     edition_id: Mapped[str | None] = mapped_column(
         Uuid(as_uuid=False),
@@ -105,7 +105,7 @@ class ListeningHistory(db.Model):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="listening_history")
-    article: Mapped["Article"] = relationship("Article", back_populates="listening_history")
+    article: Mapped["Article | None"] = relationship("Article", back_populates="listening_history")
     edition: Mapped["Edition | None"] = relationship("Edition")
 
     def to_dict(self) -> dict:

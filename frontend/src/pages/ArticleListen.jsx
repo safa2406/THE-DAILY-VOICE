@@ -24,6 +24,8 @@ import { useAudio, SUPPORTED_LANGUAGES } from '../context/AudioContext';
 import { useLibrary } from '../context/LibraryContext';
 import { useEdition } from '../context/EditionContext';
 import { SAMPLE_ARTICLES } from '../utils/sampleData';
+import AskAiModal from '../components/AskAiModal';
+import AudioProgressBar from '../components/AudioProgressBar';
 
 export default function ArticleListen() {
   const { articleId } = useParams();
@@ -61,6 +63,7 @@ export default function ArticleListen() {
   const [activeTab, setActiveTab] = useState('player');
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [showAiChat, setShowAiChat] = useState(false);
 
   // Find target article from edition or sample dataset without autoplaying
   const targetArticle =
@@ -74,14 +77,14 @@ export default function ArticleListen() {
   if (!article) {
     return (
       <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-300">
-        <div className="p-8 sm:p-12 text-center bg-white rounded-3xl border border-[#eae4d9] shadow-xs">
+        <div className="p-8 sm:p-12 text-center bg-white rounded-[20px] border border-[#eae4d9] shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
           <div className="w-12 h-12 rounded-2xl bg-[#fbeee6] text-[#9a3412] flex items-center justify-center mx-auto mb-3">
             <Volume2 className="w-6 h-6" />
           </div>
           <h2 className="font-serif font-bold text-xl text-[#1c1917] mb-1">
             No Article Selected
           </h2>
-          <p className="text-xs sm:text-sm text-[#78716c] font-serif max-w-md mx-auto mb-5 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#5c534a] font-serif max-w-md mx-auto mb-5 leading-relaxed">
             Select an article from today's newspaper or browse front-page headlines to start listening.
           </p>
           <button
@@ -124,10 +127,10 @@ export default function ArticleListen() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center space-x-1.5 text-xs font-mono text-[#78716c] hover:text-[#1c1917] transition-colors cursor-pointer group"
+          className="flex items-center space-x-1.5 text-xs font-mono text-[#5c534a] hover:text-[#1c1917] transition-colors cursor-pointer group"
         >
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          <span>Back to Articles</span>
+          <span>Back</span>
         </button>
 
         <span className="text-xs font-serif font-bold text-[#1c1917]">
@@ -140,7 +143,7 @@ export default function ArticleListen() {
           className={`p-2 rounded-xl transition-all cursor-pointer ${
             bookmarked
               ? 'text-[#9a3412] bg-[#fbeee6]'
-              : 'text-[#78716c] hover:text-[#1c1917] hover:bg-[#f3ece2]'
+              : 'text-[#5c534a] hover:text-[#1c1917] hover:bg-[#f3ece2]'
           }`}
           title={bookmarked ? 'Saved in Library' : 'Save to Library'}
         >
@@ -149,7 +152,7 @@ export default function ArticleListen() {
       </div>
 
       {/* Main Listening Card */}
-      <div className="bg-white rounded-3xl border border-[#eae4d9] shadow-[0_8px_30px_rgba(28,25,23,0.06)] overflow-hidden">
+      <div className="bg-white rounded-[20px] border border-[#eae4d9] shadow-[0_4px_20px_rgba(28,25,23,0.04)] overflow-hidden">
         {/* Tab Toggle: Audio Player vs Full Text */}
         <div className="flex border-b border-[#eae4d9] text-xs font-medium bg-[#f3ece2]/40">
           <button
@@ -158,7 +161,7 @@ export default function ArticleListen() {
             className={`flex-1 py-3.5 flex items-center justify-center space-x-2 border-b-2 transition-all cursor-pointer ${
               activeTab === 'player'
                 ? 'border-[#9a3412] text-[#9a3412] font-semibold bg-white'
-                : 'border-transparent text-[#78716c] hover:text-[#1c1917]'
+                : 'border-transparent text-[#5c534a] hover:text-[#1c1917]'
             }`}
           >
             <Volume2 className="w-4 h-4" />
@@ -170,7 +173,7 @@ export default function ArticleListen() {
             className={`flex-1 py-3.5 flex items-center justify-center space-x-2 border-b-2 transition-all cursor-pointer ${
               activeTab === 'read'
                 ? 'border-[#9a3412] text-[#9a3412] font-semibold bg-white'
-                : 'border-transparent text-[#78716c] hover:text-[#1c1917]'
+                : 'border-transparent text-[#5c534a] hover:text-[#1c1917]'
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -198,7 +201,7 @@ export default function ArticleListen() {
             </h1>
 
             {/* Publisher & Date */}
-            <p className="text-xs text-[#78716c] font-mono mb-6">
+            <p className="text-xs text-[#5c534a] font-mono mb-6">
               {article.publisher || article.byline || 'Broadsheet Correspondent'} • Page {article.pageNumber || article.page_number || 1}
             </p>
 
@@ -211,7 +214,7 @@ export default function ArticleListen() {
 
                 {/* Pre-listening Language Selector */}
                 <div className="flex items-center justify-between p-3 bg-[#faf7f2] rounded-2xl border border-[#eae4d9]">
-                  <span className="text-xs font-mono font-medium text-[#78716c]">Narration Language:</span>
+                  <span className="text-xs font-mono font-medium text-[#5c534a]">Narration Language:</span>
                   <div className="relative">
                     <button
                       type="button"
@@ -220,7 +223,7 @@ export default function ArticleListen() {
                     >
                       <Languages className="w-3.5 h-3.5 text-[#9a3412]" />
                       <span className="font-semibold">{language}</span>
-                      <ChevronDown className="w-3.5 h-3.5 text-[#78716c]" />
+                      <ChevronDown className="w-3.5 h-3.5 text-[#5c534a]" />
                     </button>
                     {showLangMenu && (
                       <div className="absolute right-0 top-full mt-1.5 w-48 bg-white border border-[#eae4d9] rounded-xl shadow-xl z-30 py-1">
@@ -238,7 +241,7 @@ export default function ArticleListen() {
                           >
                             <div>
                               <span>{l.name}</span>
-                              <span className="text-[10px] text-[#78716c] ml-1.5 font-sans">({l.label})</span>
+                              <span className="text-xs text-[#5c534a] ml-1.5 font-sans">({l.label})</span>
                             </div>
                             {language === l.name && <Check className="w-3.5 h-3.5 text-[#9a3412]" />}
                           </button>
@@ -248,8 +251,8 @@ export default function ArticleListen() {
                   </div>
                 </div>
 
-                <div className="text-xs font-mono font-semibold text-[#78716c] pt-1">
-                  Choose a listening option to begin narration:
+                <div className="text-xs font-mono font-semibold text-[#5c534a] pt-1">
+                  Narration Options
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
@@ -257,24 +260,24 @@ export default function ArticleListen() {
                   <button
                     type="button"
                     onClick={() => handleStartListening('summary')}
-                    className="p-4 rounded-2xl bg-gradient-to-br from-[#ea580c] to-[#9a3412] hover:from-[#f97316] hover:to-[#ea580c] text-white shadow-md hover:shadow-lg transition-all text-left flex flex-col justify-between cursor-pointer group active:scale-95"
+                    className="p-4 rounded-2xl bg-gradient-to-br from-[#9a3412] to-[#7c2d12] hover:from-[#7c2d12] hover:to-[#6c2710] text-white shadow-md hover:shadow-lg transition-all text-left flex flex-col justify-between cursor-pointer group active:scale-95"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <Sparkles className="w-4 h-4 text-orange-200" />
+                        <Sparkles className="w-4 h-4 text-[#fbeee6]" />
                         <span className="text-[10px] font-mono uppercase bg-white/20 px-2 py-0.5 rounded-full font-bold">
                           30–45s
                         </span>
                       </div>
                       <div className="font-serif font-bold text-base leading-snug mb-1">
-                        Listen to Summary
+                        Summary
                       </div>
                       <div className="text-[11px] text-white/80 font-serif leading-tight">
-                        Concise AI summary preserving key facts and figures.
+                        Key facts and context in under a minute.
                       </div>
                     </div>
                     <div className="mt-4 pt-2 border-t border-white/20 flex items-center justify-between text-xs font-mono font-bold">
-                      <span>Start Summary</span>
+                      <span>Play Summary</span>
                       <Play className="w-3.5 h-3.5 fill-current" />
                     </div>
                   </button>
@@ -288,19 +291,19 @@ export default function ArticleListen() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <BookOpen className="w-4 h-4 text-[#9a3412]" />
-                        <span className="text-[10px] font-mono uppercase bg-[#eae4d9] text-[#78716c] px-2 py-0.5 rounded-full font-bold">
+                        <span className="text-xs font-mono uppercase bg-[#eae4d9] text-[#5c534a] px-2 py-0.5 rounded-full font-bold">
                           Unabridged
                         </span>
                       </div>
                       <div className="font-serif font-bold text-base leading-snug mb-1">
-                        Listen to Full Article
+                        Full Article
                       </div>
-                      <div className="text-[11px] text-[#78716c] font-serif leading-tight">
-                        Complete unabridged report with original context.
+                      <div className="text-xs text-[#5c534a] font-serif leading-tight">
+                        Complete unabridged broadsheet report.
                       </div>
                     </div>
                     <div className="mt-4 pt-2 border-t border-[#eae4d9] flex items-center justify-between text-xs font-mono font-bold text-[#9a3412]">
-                      <span>Play Full Story</span>
+                      <span>Play Full</span>
                       <Play className="w-3.5 h-3.5 fill-current" />
                     </div>
                   </button>
@@ -311,12 +314,22 @@ export default function ArticleListen() {
                   <button
                     type="button"
                     onClick={() => playHeadlines(selectedEdition)}
-                    className="text-xs font-mono text-[#78716c] hover:text-[#9a3412] flex items-center justify-center space-x-1.5 mx-auto pt-2 transition-colors cursor-pointer"
+                    className="text-xs font-mono text-[#5c534a] hover:text-[#9a3412] flex items-center justify-center space-x-1.5 mx-auto pt-2 transition-colors cursor-pointer"
                   >
                     <Headphones className="w-3.5 h-3.5 text-[#9a3412]" />
-                    <span>Or stream today's front-page headlines digest</span>
+                    <span>Play headline digest</span>
                   </button>
                 )}
+
+                {/* Redesigned Ask AI Button in Pre-Listening Area */}
+                <button
+                  type="button"
+                  onClick={() => setShowAiChat(true)}
+                  className="w-full mt-2 py-2.5 px-4 rounded-xl border border-[#e7dfd1] bg-[#fbf8f3] hover:bg-[#f3ece0] hover:border-[#d6cebf] text-[#1c1917] hover:text-[#9a3412] text-xs font-medium flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-xs active:scale-[0.99] group"
+                >
+                  <Sparkles className="w-4 h-4 text-[#9a3412] transition-transform group-hover:scale-110" />
+                  <span className="font-serif font-semibold tracking-wide">Ask AI</span>
+                </button>
               </div>
             ) : (
               /* ACTIVE TACTILE AUDIO PLAYER */
@@ -329,10 +342,10 @@ export default function ArticleListen() {
                     className={`px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer ${
                       listeningMode === 'summary'
                         ? 'bg-white text-[#9a3412] font-bold shadow-xs'
-                        : 'text-[#78716c] hover:text-[#1c1917]'
+                        : 'text-[#5c534a] hover:text-[#1c1917]'
                     }`}
                   >
-                    <Sparkles className="w-3 h-3 text-[#ea580c]" />
+                    <Sparkles className="w-3 h-3 text-[#9a3412]" />
                     <span>Article Summary</span>
                   </button>
                   <button
@@ -341,18 +354,18 @@ export default function ArticleListen() {
                     className={`px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer ${
                       listeningMode === 'full'
                         ? 'bg-white text-[#9a3412] font-bold shadow-xs'
-                        : 'text-[#78716c] hover:text-[#1c1917]'
+                        : 'text-[#5c534a] hover:text-[#1c1917]'
                     }`}
                   >
-                    <BookOpen className="w-3 h-3 text-[#ea580c]" />
+                    <BookOpen className="w-3 h-3 text-[#9a3412]" />
                     <span>Full Article</span>
                   </button>
                 </div>
 
                 {/* Narrated Spoken Text or Loading Banner */}
                 {isLoading ? (
-                  <div className="w-full p-6 bg-[#fbeee6]/70 rounded-2xl border border-[#ea580c]/30 text-center mb-6 animate-pulse">
-                    <Loader2 className="w-6 h-6 animate-spin text-[#ea580c] mx-auto mb-2" />
+                  <div className="w-full p-6 bg-[#fbeee6]/70 rounded-2xl border border-[#9a3412]/30 text-center mb-6 animate-pulse">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#9a3412] mx-auto mb-2" />
                     <p className="font-serif font-bold text-sm text-[#9a3412]">
                       {language === 'English'
                         ? (listeningMode === 'summary' ? 'Generating AI summary...' : 'Synthesizing article audio...')
@@ -386,22 +399,14 @@ export default function ArticleListen() {
                   </div>
                 )}
 
-                {/* Progress Scrubber Bar */}
+                {/* Spotify-inspired Audio Progress Bar */}
                 <div className="w-full mb-6">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={progressPercent || 0}
-                    onChange={handleSliderChange}
+                  <AudioProgressBar
+                    currentTime={currentTime}
+                    duration={duration}
+                    onSeek={seek}
                     disabled={isLoading}
-                    className="w-full h-2.5 bg-[#eae4d9] rounded-lg appearance-none cursor-pointer accent-[#9a3412]"
                   />
-                  <div className="flex justify-between text-xs font-mono text-[#78716c] mt-2 font-medium">
-                    <span>{formattedCurrentTime}</span>
-                    <span className="text-[#a8a29e]">{formatRemaining(remainingSeconds)}</span>
-                    <span>{formattedDuration}</span>
-                  </div>
                 </div>
 
                 {/* Tactile Audio Transport Controls */}
@@ -421,7 +426,7 @@ export default function ArticleListen() {
                     type="button"
                     onClick={togglePlayPause}
                     disabled={isLoading}
-                    className="w-20 h-20 rounded-full bg-gradient-to-br from-[#ea580c] to-[#9a3412] hover:from-[#f97316] hover:to-[#ea580c] text-white flex items-center justify-center shadow-[0_8px_25px_rgba(234,88,12,0.35)] transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="w-20 h-20 rounded-full bg-[#9a3412] hover:bg-[#7c2d12] text-white flex items-center justify-center shadow-[0_8px_25px_rgba(154,52,18,0.35)] transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                     title={isPlaying ? 'Pause' : 'Play'}
                   >
                     {isLoading ? (
@@ -509,7 +514,7 @@ export default function ArticleListen() {
                           >
                             <div>
                               <span>{l.name}</span>
-                              <span className="text-[10px] text-[#78716c] ml-1.5">({l.label})</span>
+                              <span className="text-xs text-[#5c534a] ml-1.5">({l.label})</span>
                             </div>
                             {language === l.name && <Check className="w-3.5 h-3.5 text-[#9a3412]" />}
                           </button>
@@ -518,6 +523,16 @@ export default function ArticleListen() {
                     )}
                   </div>
                 </div>
+
+                {/* Redesigned Ask AI Button in Active Player */}
+                <button
+                  type="button"
+                  onClick={() => setShowAiChat(true)}
+                  className="w-full py-2.5 px-4 rounded-xl border border-[#e7dfd1] bg-[#fbf8f3] hover:bg-[#f3ece0] hover:border-[#d6cebf] text-[#1c1917] hover:text-[#9a3412] text-xs font-medium flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-xs active:scale-[0.99] group"
+                >
+                  <Sparkles className="w-4 h-4 text-[#9a3412] transition-transform group-hover:scale-110" />
+                  <span className="font-serif font-semibold tracking-wide">Ask AI</span>
+                </button>
               </div>
             )}
           </div>
@@ -531,7 +546,7 @@ export default function ArticleListen() {
               <h2 className="text-2xl sm:text-3xl font-serif font-black text-[#1c1917] mt-1 leading-tight">
                 {article.title || article.headline}
               </h2>
-              <p className="text-xs text-[#78716c] font-mono mt-1">
+              <p className="text-xs text-[#5c534a] font-mono mt-1">
                 Reported by {article.publisher || article.byline || 'Broadsheet Staff'} • Page {article.pageNumber || article.page_number || 1}
               </p>
             </div>
@@ -543,9 +558,29 @@ export default function ArticleListen() {
                 </p>
               ))}
             </div>
+
+            {/* Redesigned Ask AI Button in Full Story Text tab */}
+            <div className="pt-6 border-t border-[#eae4d9]">
+              <button
+                type="button"
+                onClick={() => setShowAiChat(true)}
+                className="w-full py-2.5 px-4 rounded-xl border border-[#e7dfd1] bg-[#fbf8f3] hover:bg-[#f3ece0] hover:border-[#d6cebf] text-[#1c1917] hover:text-[#9a3412] text-xs font-medium flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-xs active:scale-[0.99] group"
+              >
+                <Sparkles className="w-4 h-4 text-[#9a3412] transition-transform group-hover:scale-110" />
+                <span className="font-serif font-semibold tracking-wide">Ask AI</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Ask AI Chat Interface Dialog */}
+      <AskAiModal
+        isOpen={showAiChat}
+        onClose={() => setShowAiChat(false)}
+        article={article}
+        currentLanguage={language}
+      />
     </div>
   );
 }

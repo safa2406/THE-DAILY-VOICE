@@ -1,0 +1,87 @@
+{
+  "name": "The Daily Voice",
+  "short_name": "Daily Voice",
+  "description": "The Newspaper Audiobook Platform — Read and listen to broadsheet editions, headline digests, and Ask AI about the news.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#faf7f2",
+  "theme_color": "#faf7f2",
+  "categories": [
+    "news",
+    "magazines",
+    "books",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse Sections",
+      "short_name": "Browse",
+      "description": "Browse today's broadsheet sections and articles",
+      "url": "/browse",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Listening Dashboard",
+      "short_name": "Dashboard",
+      "description": "View listening stats and progress",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Your Library",
+      "short_name": "Library",
+      "description": "Access saved stories and listening history",
+      "url": "/library",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

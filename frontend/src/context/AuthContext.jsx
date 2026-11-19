@@ -54,10 +54,19 @@ export function AuthProvider({ children }) {
           if (stored) {
             try {
               const parsed = JSON.parse(stored);
-              if (parsed && parsed.user) {
+              const token = parsed?.session?.access_token;
+              const isValidJwt = typeof token === 'string' && token.trim().split('.').length === 3;
+              if (parsed && parsed.user && isValidJwt) {
                 if (mounted) {
                   setUser(parsed.user);
                   setSession(parsed.session || null);
+                }
+              } else {
+                // Stale, malformed, or non-JWT legacy mock token - clean up
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+                if (mounted) {
+                  setUser(null);
+                  setSession(null);
                 }
               }
             } catch (e) {
@@ -96,7 +105,10 @@ export function AuthProvider({ children }) {
       } else {
         // Authenticate against backend /api/auth/login to issue cryptographically signed JWT
         const res = await apiLogin(email, password);
-        if (res.ok && res.data?.user && res.data?.session) {
+        const token = res.data?.session?.access_token;
+        const isValidJwt = typeof token === 'string' && token.trim().split('.').length === 3;
+
+        if (res.ok && res.data?.user && isValidJwt) {
           const sessionPayload = {
             user: res.data.user,
             session: res.data.session,
@@ -107,32 +119,11 @@ export function AuthProvider({ children }) {
           return { data: sessionPayload, error: null };
         }
 
-        // Fallback for isolated offline/test environments if backend unreachable
-        const usernamePart = email.split('@')[0];
-        const formattedName = usernamePart.charAt(0).toUpperCase() + usernamePart.slice(1);
-        const resolvedId = email === 'reader@dailyvoice.com'
-          ? '00000000-0000-4000-a000-000000000001'
-          : generateUuid();
-
-        const mockUser = {
-          id: resolvedId,
-          email,
-          user_metadata: {
-            full_name: formattedName,
-            id: resolvedId,
-          },
-          created_at: new Date().toISOString(),
-        };
-
-        const sessionPayload = {
-          user: mockUser,
-          session: { access_token: 'local-session-token-' + Date.now() },
-        };
-
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sessionPayload));
-        setUser(mockUser);
-        setSession(sessionPayload.session);
-        return { data: sessionPayload, error: null };
+        const errorMessage =
+          res.data?.message ||
+          res.error ||
+          'Authentication failed. Please verify credentials and ensure the backend server is running.';
+        return { data: null, error: new Error(errorMessage) };
       }
     } catch (error) {
       return { data: null, error };
@@ -161,7 +152,10 @@ export function AuthProvider({ children }) {
       } else {
         // Authenticate against backend /api/auth/signup to issue signed JWT
         const res = await apiSignup(email, password, fullName);
-        if (res.ok && res.data?.user && res.data?.session) {
+        const token = res.data?.session?.access_token;
+        const isValidJwt = typeof token === 'string' && token.trim().split('.').length === 3;
+
+        if (res.ok && res.data?.user && isValidJwt) {
           const sessionPayload = {
             user: res.data.user,
             session: res.data.session,
@@ -172,26 +166,11 @@ export function AuthProvider({ children }) {
           return { data: sessionPayload, error: null };
         }
 
-        const newId = generateUuid();
-        const mockUser = {
-          id: newId,
-          email,
-          user_metadata: {
-            full_name: fullName.trim(),
-            id: newId,
-          },
-          created_at: new Date().toISOString(),
-        };
-
-        const sessionPayload = {
-          user: mockUser,
-          session: { access_token: 'local-session-token-' + Date.now() },
-        };
-
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sessionPayload));
-        setUser(mockUser);
-        setSession(sessionPayload.session);
-        return { data: sessionPayload, error: null };
+        const errorMessage =
+          res.data?.message ||
+          res.error ||
+          'Subscription creation failed. Please ensure the backend server is running.';
+        return { data: null, error: new Error(errorMessage) };
       }
     } catch (error) {
       return { data: null, error };

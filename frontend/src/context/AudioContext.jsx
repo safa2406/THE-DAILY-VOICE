@@ -11,6 +11,23 @@ export const SUPPORTED_LANGUAGES = [
   { id: 'Marathi', name: 'Marathi', label: 'मराठी', sub: 'Marathi', code: 'mr' },
 ];
 
+const PLAYBACK_SPEED_STORAGE_KEY = 'dailyvoice_playback_speed';
+
+const getInitialPlaybackSpeed = () => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(PLAYBACK_SPEED_STORAGE_KEY);
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if ([0.75, 1, 1.25, 1.5, 2].includes(parsed)) {
+          return parsed;
+        }
+      }
+    }
+  } catch {}
+  return 1.0;
+};
+
 const AudioContext = createContext(null);
 
 export function AudioProvider({ children }) {
@@ -22,13 +39,14 @@ export function AudioProvider({ children }) {
   const [audioError, setAudioError] = useState(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [playbackSpeed, setPlaybackSpeedState] = useState(1.0);
+  const [playbackSpeed, setPlaybackSpeedState] = useState(getInitialPlaybackSpeed);
   const [narratedText, setNarratedText] = useState('');
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
   const [isMiniPlayerDismissed, setIsMiniPlayerDismissed] = useState(false);
 
   // Persistent HTML5 Audio instance
   const audioRef = useRef(null);
+  const playbackSpeedRef = useRef(playbackSpeed);
   const activeRequestRef = useRef(0);
   const currentArticleRef = useRef(null);
   const durationRef = useRef(0);
@@ -36,6 +54,8 @@ export function AudioProvider({ children }) {
   const targetSeekRef = useRef(0);
   const playStartWallMsRef = useRef(null);
   const unflushedListenedSecRef = useRef(0);
+  const listeningModeRef = useRef('summary');
+  const languageRef = useRef('English');
 
   let libraryContext = null;
   try {
@@ -54,8 +74,8 @@ export function AudioProvider({ children }) {
     if (playStartWallMsRef.current !== null) {
       const now = Date.now();
       const elapsedSec = (now - playStartWallMsRef.current) / 1000;
-      if (elapsedSec > 0 && elapsedSec <= 10) {
-        unflushedListenedSecRef.current += elapsedSec;
+      if (elapsedSec > 0) {
+        unflushedListenedSecRef.current += Math.min(elapsedSec, 300);
       }
       playStartWallMsRef.current = now;
     }
@@ -90,47 +110,75 @@ export function AudioProvider({ children }) {
     durationRef.current = duration;
   }, [duration]);
 
+  useEffect(() => {
+    listeningModeRef.current = listeningMode;
+  }, [listeningMode]);
+
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
+
   // Helper to persist listening progress and actual listening time to database and synchronize LibraryContext
   const syncProgress = useCallback((progress, isCompleted = null, options = {}) => {
-    const article = currentArticleRef.current;
-    if (!article || article.isEdition || !article.id) return;
+    const item = currentArticleRef.current;
+    if (!item) return;
+
+    const activeMode = listeningModeRef.current || (item.isEdition ? 'headlines' : 'summary');
+    const activeLang = languageRef.current || 'English';
+    const isEdition = Boolean(item.isEdition || item.is_edition || activeMode === 'headlines');
+    const articleId = isEdition ? null : (item.id || null);
+
+    let editionId = null;
+    if (isEdition) {
+      const candidate = item.edition_id || item.editionId || item.id || null;
+      editionId = candidate ? String(candidate).replace('-headlines', '').split('•')[0].trim() : null;
+    } else {
+      const candidate = item.edition_id || item.editionId || null;
+      editionId = candidate ? String(candidate).replace('-headlines', '').split('•')[0].trim() : null;
+    }
+
+    if (!isEdition && !articleId) return;
+    if (isEdition && !editionId) return;
+
     const dur =
       durationRef.current ||
       (audioRef.current?.duration && isFinite(audioRef.current.duration)
         ? Math.round(audioRef.current.duration)
-        : 0);
+        : (isEdition ? 240 : 180));
 
     // Atomically consume unflushed actual listening seconds so repeated syncs never double-count
     const listenedDeltaSeconds = Math.round(unflushedListenedSecRef.current * 10) / 10;
     unflushedListenedSecRef.current = 0;
 
     const meta = {
-      editionId: article.editionId || article.edition_id || null,
-      listeningMode,
-      language,
-      article,
+      editionId,
+      listeningMode: activeMode,
+      language: activeLang,
+      article: item,
       listenedDeltaSeconds,
+      isEdition,
       keepalive: Boolean(options.keepalive),
     };
 
     if (libraryContext?.recordProgress) {
-      libraryContext.recordProgress(article.id, progress, dur, isCompleted, meta);
+      libraryContext.recordProgress(articleId, progress, dur, isCompleted, meta);
     } else {
       updateListeningProgress({
-        articleId: article.id,
+        articleId,
         progressSeconds: progress,
         durationSeconds: dur,
         listenedDeltaSeconds,
         isCompleted,
-        editionId: meta.editionId,
-        listeningMode: meta.listeningMode,
-        language: meta.language,
+        editionId,
+        listeningMode: activeMode,
+        language: activeLang,
         keepalive: meta.keepalive,
+        isEdition,
       }).catch((err) => {
         console.error('Failed to sync progress:', err);
       });
     }
-  }, [libraryContext, listeningMode, language]);
+  }, [libraryContext]);
 
   const syncProgressRef = useRef(syncProgress);
   useEffect(() => {
@@ -234,7 +282,7 @@ export function AudioProvider({ children }) {
     };
 
     const handlePageHide = () => {
-      if (currentArticleRef.current && !currentArticleRef.current.isEdition) {
+      if (currentArticleRef.current) {
         accumulatePlaybackDelta();
         playStartWallMsRef.current = null;
         if (unflushedListenedSecRef.current > 0 || (audio.currentTime || 0) > 0) {
@@ -274,13 +322,29 @@ export function AudioProvider({ children }) {
     };
   }, [accumulatePlaybackDelta]);
 
-  // Sync playback speed to HTML5 audio element
+  // Sync playback speed to HTML5 audio element and persist to storage
   const setPlaybackSpeed = useCallback((speed) => {
-    setPlaybackSpeedState(speed);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = speed;
+    const validSpeed = typeof speed === 'number' ? speed : parseFloat(speed);
+    if (!isNaN(validSpeed) && validSpeed > 0) {
+      setPlaybackSpeedState(validSpeed);
+      playbackSpeedRef.current = validSpeed;
+      if (audioRef.current) {
+        audioRef.current.playbackRate = validSpeed;
+      }
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(PLAYBACK_SPEED_STORAGE_KEY, String(validSpeed));
+        }
+      } catch {}
     }
   }, []);
+
+  useEffect(() => {
+    playbackSpeedRef.current = playbackSpeed;
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
 
   // Update MediaSession API for lockscreen and media keys
   const updateMediaSession = useCallback((title, publisher, category) => {
@@ -321,11 +385,9 @@ export function AudioProvider({ children }) {
   const playListeningMode = useCallback(async (targetItem, mode = 'summary', lang = language, initialSeek = 0) => {
     if (!targetItem) return;
 
-    // Save progress and actual listening time of previous article before switching
+    // Save progress and actual listening time of previous item before switching
     if (
       currentArticleRef.current &&
-      !currentArticleRef.current.isEdition &&
-      currentArticleRef.current.id !== targetItem.id &&
       audioRef.current &&
       (audioRef.current.currentTime > 0 || unflushedListenedSecRef.current > 0)
     ) {
@@ -344,7 +406,9 @@ export function AudioProvider({ children }) {
     targetSeekRef.current = initialSeek || 0;
     lastProgressSavedRef.current = initialSeek || 0;
     setListeningModeState(mode);
+    listeningModeRef.current = mode;
     setLanguageState(lang);
+    languageRef.current = lang;
     setIsLoading(true);
     setAudioError(null);
 
@@ -358,28 +422,37 @@ export function AudioProvider({ children }) {
     setCurrentTime(initialSeek || 0);
     setDuration(0);
 
+    const isEdition = Boolean(targetItem.isEdition || targetItem.is_edition || mode === 'headlines');
+    const rawEdCandidate = isEdition
+      ? (targetItem.edition_id || targetItem.editionId || targetItem.id || null)
+      : (targetItem.edition_id || targetItem.editionId || null);
+    const cleanEditionId = rawEdCandidate
+      ? String(rawEdCandidate).replace('-headlines', '').split('•')[0].trim()
+      : null;
+
     // Immediately record listening session start (0 actual seconds elapsed so far)
-    if (!targetItem.isEdition && mode !== 'headlines' && targetItem.id) {
-      const initDur = targetItem.durationSeconds || targetItem.duration_seconds || 180;
+    if (targetItem.id || cleanEditionId) {
+      const targetArticleId = isEdition ? null : targetItem.id;
+      const initDur = targetItem.durationSeconds || targetItem.duration_seconds || (isEdition ? 240 : 180);
+
       if (libraryContext?.recordProgress) {
-        libraryContext.recordProgress(targetItem.id, initialSeek || 0, initDur, false, {
-          editionId: targetItem.editionId || targetItem.edition_id || null,
+        libraryContext.recordProgress(targetArticleId, initialSeek || 0, initDur, false, {
+          editionId: cleanEditionId,
           listeningMode: mode,
           language: lang,
           article: targetItem,
           listenedDeltaSeconds: 0,
+          isEdition,
         });
       }
     }
 
     try {
-      const isEdition = Boolean(targetItem.isEdition || mode === 'headlines');
       const articleId = isEdition ? null : (targetItem.id || null);
-      const editionId = isEdition ? targetItem.id : (targetItem.editionId || targetItem.edition_id || null);
 
       const res = await generateAudio({
         articleId,
-        editionId,
+        editionId: cleanEditionId,
         mode,
         language: lang,
       });
@@ -402,7 +475,7 @@ export function AudioProvider({ children }) {
 
       if (audioRef.current) {
         audioRef.current.src = fullAudioUrl;
-        audioRef.current.playbackRate = playbackSpeed;
+        audioRef.current.playbackRate = playbackSpeedRef.current || playbackSpeed;
         await audioRef.current.play();
 
         if (initialSeek > 0) {
@@ -442,36 +515,50 @@ export function AudioProvider({ children }) {
     playListeningMode(article, mode, lang || language, initialSeek);
   }, [playListeningMode, language]);
 
-  const playHeadlines = useCallback((edition, lang = null) => {
+  const playHeadlines = useCallback((edition, lang = null, initialSeek = 0) => {
     if (!edition) return;
+    const paperName = edition.name || edition.newspaper_name || edition.publisher || 'Broadsheet';
+    const rawId = edition.id || edition.editionId || edition.edition_id || '';
+    const cleanId = String(rawId).replace('-headlines', '').split('•')[0].trim();
     const editionItem = {
       ...edition,
+      id: cleanId,
+      editionId: cleanId,
+      edition_id: cleanId,
+      edition_code: edition.edition_code || edition.editionCode,
       isEdition: true,
-      title: `${edition.name || 'Broadsheet'} Headlines`,
-      headline: `${edition.name || 'Broadsheet'} Headlines`,
-      publisher: edition.name || 'Broadsheet Daily',
-      category: 'Headlines Digest',
+      is_edition: true,
+      name: paperName,
+      newspaper_name: paperName,
+      newspaperName: paperName,
+      publisher: paperName,
+      title: `${paperName} - Headline Digest`,
+      headline: `${paperName} - Headline Digest`,
+      category: 'Headline Digest',
     };
-    playListeningMode(editionItem, 'headlines', lang || language);
+    playListeningMode(editionItem, 'headlines', lang || languageRef.current || language, initialSeek);
   }, [playListeningMode, language]);
 
   const setListeningMode = useCallback((newMode) => {
     setListeningModeState(newMode);
+    listeningModeRef.current = newMode;
     if (currentArticle) {
-      playListeningMode(currentArticle, newMode, language);
+      playListeningMode(currentArticle, newMode, languageRef.current || language);
     }
   }, [currentArticle, language, playListeningMode]);
 
   const setLanguage = useCallback((newLang, targetItem = null) => {
     setLanguageState(newLang);
+    languageRef.current = newLang;
     const itemToPlay = targetItem || currentArticle;
     if (itemToPlay) {
-      playListeningMode(itemToPlay, listeningMode, newLang);
+      playListeningMode(itemToPlay, listeningModeRef.current || listeningMode, newLang);
     }
   }, [currentArticle, listeningMode, playListeningMode]);
 
   const changeLanguageOnly = useCallback((newLang) => {
     setLanguageState(newLang);
+    languageRef.current = newLang;
   }, []);
 
   const togglePlayPause = useCallback(() => {

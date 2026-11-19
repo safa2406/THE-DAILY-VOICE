@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#faf7f2" />
+    <title>The Daily Voice — Offline</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root {
+        --bg-main: #faf7f2;
+        --card-bg: #ffffff;
+        --border-subtle: #eae4d9;
+        --text-primary: #1c1917;
+        --text-secondary: #5c534a;
+        --accent: #9a3412;
+        --accent-hover: #7c2d12;
+        --accent-light: #fbeee6;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background-color: var(--bg-main);
+        color: var(--text-primary);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 1.5rem;
+        background-image: 
+          radial-gradient(#e5dec9 0.5px, transparent 0.5px),
+          radial-gradient(#e5dec9 0.5px, var(--bg-main) 0.5px);
+        background-size: 20px 20px;
+        background-position: 0 0, 10px 10px;
+      }
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-subtle);
+        border-radius: 24px;
+        padding: 2.5rem 2rem;
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 16px 40px rgba(28, 25, 23, 0.06);
+      }
+      .masthead {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: #1c1917;
+        color: #ffffff;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 8px 24px rgba(28, 25, 23, 0.15);
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 9999px;
+        background: var(--accent-light);
+        border: 1px solid #f0d8cc;
+        color: var(--accent);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 1rem;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.85); }
+      }
+      h1 {
+        font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+        font-size: 1.85rem;
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 0.6rem;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+      }
+      p.subtitle {
+        font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+        font-style: italic;
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        margin-bottom: 1.25rem;
+        line-height: 1.5;
+      }
+      .notice-box {
+        background: #faf7f2;
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        padding: 1rem 1.15rem;
+        text-align: left;
+        margin-bottom: 1.75rem;
+        font-size: 0.82rem;
+        line-height: 1.6;
+        color: var(--text-secondary);
+      }
+      .notice-box strong {
+        color: var(--text-primary);
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+      button.retry-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.9rem 1.5rem;
+        border-radius: 16px;
+        background: var(--accent);
+        color: #ffffff;
+        font-size: 0.88rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.1s;
+        box-shadow: 0 4px 14px rgba(154, 52, 18, 0.25);
+      }
+      button.retry-btn:hover {
+        background: var(--accent-hover);
+      }
+      button.retry-btn:active {
+        transform: scale(0.98);
+      }
+      .status-text {
+        margin-top: 1rem;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      .footer-dateline {
+        margin-top: 2rem;
+        font-size: 0.72rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #8c827a;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="masthead">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9a3412" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
+          <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+          <circle cx="12" cy="12" r="2"/>
+          <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
+          <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>
+        </svg>
+      </div>
+
+      <div class="badge">
+        <span class="dot"></span>
+        <span>Offline Notice</span>
+      </div>
+
+      <h1>Connection Required</h1>
+      <p class="subtitle">The Daily Voice • The Audio Broadsheet</p>
+
+      <div class="notice-box">
+        <strong>Live Stream & Narration Connectivity</strong>
+        The Daily Voice delivers live neural audio narration, newspaper OCR processing, and Ask AI intelligence. An active internet connection is required to stream audio chapters or sync physical broadsheets.
+      </div>
+
+      <button type="button" class="retry-btn" id="retry-btn" onclick="checkConnection()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>Check Connection & Retry</span>
+      </button>
+
+      <div class="status-text" id="status-msg">
+        Waiting for network reconnect...
+      </div>
+
+      <div class="footer-dateline">
+        ESTABLISHED 2026 • AUDIO ACCESSIBILITY INITIATIVE
+      </div>
+    </div>
+
+    <script>
+      function checkConnection() {
+        var msg = document.getElementById('status-msg');
+        if (navigator.onLine) {
+          msg.textContent = 'Connection restored! Reloading edition...';
+          window.location.reload();
+        } else {
+          msg.textContent = 'Device is still offline. Please check your Wi-Fi or cellular network.';
+        }
+      }
+
+      window.addEventListener('online', function() {
+        var msg = document.getElementById('status-msg');
+        msg.textContent = 'Internet connection detected! Restoring edition...';
+        setTimeout(function() {
+          window.location.reload();
+        }, 800);
+      });
+    </script>
+  </body>
+</html>

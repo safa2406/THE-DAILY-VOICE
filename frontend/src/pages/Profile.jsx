@@ -49,21 +49,14 @@ export default function Profile() {
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-300">
       {/* Header */}
-      <section className="bg-white rounded-3xl border border-[#eae4d9] p-6 sm:p-8 shadow-[0_2px_12px_rgba(28,25,23,0.03)]">
-        <div className="flex items-center space-x-2 text-xs font-mono text-[#78716c] uppercase mb-1">
-          <Settings className="w-4 h-4 text-[#9a3412]" />
-          <span>Reader Preferences</span>
-        </div>
+      <section className="bg-white rounded-[20px] border border-[#eae4d9] p-6 sm:p-8 shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
         <h1 className="font-serif font-black text-3xl sm:text-4xl text-[#1c1917] tracking-tight">
-          Account & Preferences
+          Settings
         </h1>
-        <p className="text-xs sm:text-sm text-[#78716c] font-serif mt-1">
-          Configure your narration engine parameters, playback defaults, and account information.
-        </p>
       </section>
 
       {/* User Profile Summary Card */}
-      <section className="p-6 sm:p-7 bg-white rounded-3xl border border-[#eae4d9] shadow-xs flex items-center justify-between">
+      <section className="p-6 sm:p-7 bg-white rounded-[20px] border border-[#eae4d9] shadow-[0_4px_20px_rgba(28,25,23,0.04)] flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#f3ece2] to-[#e7dfd1] border border-[#eae4d9] text-[#9a3412] flex items-center justify-center font-serif text-2xl font-bold shadow-xs">
             {initials}
@@ -72,10 +65,10 @@ export default function Profile() {
             <h2 className="font-serif font-black text-xl text-[#1c1917]">
               {displayName}
             </h2>
-            <p className="text-xs font-mono text-[#78716c]">
+            <p className="text-xs font-mono text-[#5c534a]">
               {user?.email || 'subscriber@dailyvoice.com'}
             </p>
-            <span className="inline-block mt-1.5 text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+            <span className="inline-block mt-1.5 text-xs font-mono uppercase px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
               Verified Subscriber • Digital Broadside
             </span>
           </div>
@@ -84,7 +77,7 @@ export default function Profile() {
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex items-center space-x-1.5 px-3 py-2 text-xs font-mono font-medium text-[#78716c] hover:text-rose-700 hover:bg-rose-50 rounded-2xl transition-all border border-transparent hover:border-rose-200 cursor-pointer"
+          className="flex items-center space-x-1.5 px-3 py-2 text-xs font-mono font-medium text-[#5c534a] hover:text-rose-700 hover:bg-rose-50 rounded-2xl transition-all border border-transparent hover:border-rose-200 cursor-pointer"
           title="Sign Out of The Daily Voice"
         >
           <LogOut className="w-4 h-4" />
@@ -93,19 +86,19 @@ export default function Profile() {
       </section>
 
       {savedNotice && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-medium flex items-center space-x-2 animate-in fade-in">
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-[20px] text-xs font-medium flex items-center space-x-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{savedNotice}</span>
         </div>
       )}
 
       {/* Audio Narration Preferences */}
-      <section className="bg-white rounded-3xl border border-[#eae4d9] p-6 sm:p-8 space-y-6 shadow-xs">
+      <section className="bg-white rounded-[20px] border border-[#eae4d9] p-6 sm:p-8 space-y-6 shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
         <div className="border-b border-[#eae4d9] pb-4">
           <h3 className="font-serif font-bold text-lg text-[#1c1917]">
             Audio Narration Engine
           </h3>
-          <p className="text-xs text-[#78716c] font-mono mt-0.5">
+          <p className="text-xs text-[#5c534a] font-mono mt-0.5">
             Default voice, speed, and prosody parameters across broadsheet editions
           </p>
         </div>
@@ -117,20 +110,20 @@ export default function Profile() {
               <span className="text-sm font-semibold text-[#1c1917] block font-serif">
                 Default Playback Speed
               </span>
-              <span className="text-[11px] text-[#78716c] font-mono">
-                Active speed: {playbackSpeed}x normal speed
+              <span className="text-xs text-[#5c534a] font-mono">
+                Selected default: {playbackSpeed}x normal speed
               </span>
             </div>
             <select
-              value={playbackSpeed}
+              value={String(Number(playbackSpeed))}
               onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
               className="py-2 px-3.5 bg-[#faf7f2] border border-[#eae4d9] rounded-xl text-xs font-mono text-[#1c1917] focus:outline-none focus:border-[#9a3412] cursor-pointer"
             >
               <option value="0.75">0.75x (Relaxed)</option>
-              <option value="1.0">1.0x (Standard)</option>
+              <option value="1">1.0x (Standard)</option>
               <option value="1.25">1.25x (Recommended)</option>
               <option value="1.5">1.5x (Brisk)</option>
-              <option value="2.0">2.0x (Rapid)</option>
+              <option value="2">2.0x (Rapid)</option>
             </select>
           </div>
 
@@ -140,7 +133,7 @@ export default function Profile() {
               <span className="text-sm font-semibold text-[#1c1917] block font-serif">
                 Narration Language
               </span>
-              <span className="text-[11px] text-[#78716c] font-mono">
+              <span className="text-xs text-[#5c534a] font-mono">
                 Voice synthesis locale and translation
               </span>
             </div>
@@ -163,7 +156,7 @@ export default function Profile() {
               <span className="text-sm font-semibold text-[#1c1917] block font-serif">
                 Editorial Voice Model
               </span>
-              <span className="text-[11px] text-[#78716c] font-mono">
+              <span className="text-xs text-[#5c534a] font-mono">
                 TTS vocal timbre and inflection style
               </span>
             </div>
@@ -184,7 +177,7 @@ export default function Profile() {
               <span className="text-sm font-semibold text-[#1c1917] block font-serif">
                 Continuous Section Narration
               </span>
-              <span className="text-[11px] text-[#78716c] font-mono">
+              <span className="text-xs text-[#5c534a] font-mono">
                 Automatically proceed to the next story in the section
               </span>
             </div>
@@ -207,12 +200,12 @@ export default function Profile() {
       </section>
 
       {/* Account Session Actions */}
-      <section className="p-6 bg-white rounded-3xl border border-[#eae4d9] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+      <section className="p-6 bg-white rounded-[20px] border border-[#eae4d9] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
         <div>
           <h4 className="font-serif font-bold text-base text-[#1c1917]">
             Subscriber Session
           </h4>
-          <p className="text-[11px] font-mono text-[#78716c] mt-0.5">
+          <p className="text-xs font-mono text-[#5c534a] mt-0.5">
             Signed in as <span className="font-semibold text-[#1c1917]">{user?.email || 'subscriber@dailyvoice.com'}</span>
           </p>
         </div>
@@ -227,16 +220,16 @@ export default function Profile() {
       </section>
 
       {/* Backend Diagnostics Link Card */}
-      <section className="p-6 bg-white rounded-3xl border border-[#eae4d9] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+      <section className="p-6 bg-white rounded-[20px] border border-[#eae4d9] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
         <div className="flex items-center space-x-3.5">
           <div className="p-3 bg-[#fbeee6] rounded-2xl text-[#9a3412]">
             <Activity className="w-5 h-5" />
           </div>
           <div>
             <h4 className="font-serif font-bold text-base text-[#1c1917]">
-              Phase 1 Backend API Diagnostics
+              Backend API Diagnostics
             </h4>
-            <p className="text-[11px] font-mono text-[#78716c]">
+            <p className="text-xs font-mono text-[#5c534a]">
               Check Flask server connectivity, database health, and JWT verification
             </p>
           </div>
@@ -250,9 +243,9 @@ export default function Profile() {
       </section>
 
       {/* Editorial Footer Info */}
-      <div className="text-center text-xs font-mono text-[#a8a29e] pb-6 space-y-1">
-        <p>The Daily Voice — Version 1.0.0 (Enhanced Editorial Architecture)</p>
-        <p>Built with React 19, Tailwind CSS v4, and Lucide Icons</p>
+      <div className="text-center text-xs font-mono text-[#5c534a] pb-6 space-y-1">
+        <p>The Daily Voice — Broadsheet Audio Platform</p>
+        <p>Built for thoughtful newspaper listening</p>
       </div>
     </div>
   );

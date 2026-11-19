@@ -254,4 +254,169 @@ describe('User Activity & Persistence - Auth Headers & State', () => {
 
     assert.deepEqual(savedIds, ['art-existing']);
   });
+
+  test('13. Headline Digest session upsert and deduplication by editionId and headlines mode', () => {
+    let history = [];
+    const upsertProgress = (articleId, progress, duration, isCompleted, meta = {}) => {
+      const isEdition = Boolean(meta.isEdition || meta.listeningMode === 'headlines' || (!articleId && meta.editionId));
+      const editionId = meta.editionId || null;
+      const idStr = articleId ? String(articleId) : null;
+      const sessionKey = idStr || `digest-${editionId}`;
+
+      const idx = history.findIndex((item) => {
+        if (isEdition) {
+          return (
+            (item.listeningMode === 'headlines' || item.listening_mode === 'headlines') &&
+            String(item.editionId || item.edition_id) === String(editionId)
+          );
+        }
+        return String(item.articleId || item.article_id) === idStr;
+      });
+
+      const existing = idx >= 0 ? history[idx] : null;
+      const effectiveCompleted = Boolean(existing?.isCompleted) || Boolean(isCompleted);
+
+      const entry = {
+        ...(existing || {}),
+        id: existing?.id || sessionKey,
+        articleId: idStr,
+        editionId: editionId,
+        progressSeconds: progress,
+        durationSeconds: duration,
+        isCompleted: effectiveCompleted,
+        listeningMode: meta.listeningMode || (isEdition ? 'headlines' : 'summary'),
+        language: meta.language || 'English',
+        article: meta.article || {
+          headline: 'The Times - Headline Digest',
+          isEdition: true,
+          category: 'Headline Digest',
+        },
+      };
+
+      if (idx >= 0) {
+        const next = [...history];
+        next.splice(idx, 1);
+        history = [entry, ...next];
+      } else {
+        history = [entry, ...history];
+      }
+    };
+
+    // Start Headline Digest listening (Scenario A: 20 seconds)
+    upsertProgress(null, 20.0, 240, false, {
+      editionId: 'ed-toi-001',
+      listeningMode: 'headlines',
+      language: 'English',
+      isEdition: true,
+    });
+
+    assert.equal(history.length, 1);
+    assert.equal(history[0].editionId, 'ed-toi-001');
+    assert.equal(history[0].articleId, null);
+    assert.equal(history[0].listeningMode, 'headlines');
+    assert.equal(history[0].progressSeconds, 20.0);
+    assert.equal(history[0].isCompleted, false);
+    assert.equal(history[0].article.isEdition, true);
+
+    // Resume Headline Digest listening and complete it (Scenario B: 240s)
+    upsertProgress(null, 240.0, 240, true, {
+      editionId: 'ed-toi-001',
+      listeningMode: 'headlines',
+      language: 'English',
+      isEdition: true,
+    });
+
+    // Should update existing entry, not create duplicate
+    assert.equal(history.length, 1);
+    assert.equal(history[0].progressSeconds, 240.0);
+    assert.equal(history[0].isCompleted, true);
+
+    // Sticky completion: replay at 0s does not un-complete
+    upsertProgress(null, 0.0, 240, false, {
+      editionId: 'ed-toi-001',
+      listeningMode: 'headlines',
+      language: 'English',
+      isEdition: true,
+    });
+
+    assert.equal(history.length, 1);
+    assert.equal(history[0].isCompleted, true);
+  });
+
+  test('14. Headline Digest and individual article coexistence in listening history', () => {
+    let history = [];
+    const upsertProgress = (articleId, progress, duration, isCompleted, meta = {}) => {
+      const isEdition = Boolean(meta.isEdition || meta.listeningMode === 'headlines' || (!articleId && meta.editionId));
+      const editionId = meta.editionId || null;
+      const idStr = articleId ? String(articleId) : null;
+      const sessionKey = idStr || `digest-${editionId}`;
+
+      const idx = history.findIndex((item) => {
+        if (isEdition) {
+          return (
+            (item.listeningMode === 'headlines' || item.listening_mode === 'headlines') &&
+            String(item.editionId || item.edition_id) === String(editionId)
+          );
+        }
+        return String(item.articleId || item.article_id) === idStr;
+      });
+
+      const existing = idx >= 0 ? history[idx] : null;
+      const effectiveCompleted = Boolean(existing?.isCompleted) || Boolean(isCompleted);
+
+      const entry = {
+        ...(existing || {}),
+        id: existing?.id || sessionKey,
+        articleId: idStr,
+        editionId: editionId,
+        progressSeconds: progress,
+        durationSeconds: duration,
+        isCompleted: effectiveCompleted,
+        listeningMode: meta.listeningMode || (isEdition ? 'headlines' : 'summary'),
+        language: meta.language || 'English',
+        article: meta.article,
+      };
+
+      if (idx >= 0) {
+        const next = [...history];
+        next.splice(idx, 1);
+        history = [entry, ...next];
+      } else {
+        history = [entry, ...history];
+      }
+    };
+
+    // 1. Listen to Headline Digest
+    upsertProgress(null, 240, 240, true, {
+      editionId: 'ed-1',
+      listeningMode: 'headlines',
+      isEdition: true,
+      article: { headline: 'The Times - Headline Digest', isEdition: true },
+    });
+
+    // 2. Listen to an individual article
+    upsertProgress('art-101', 65, 180, false, {
+      editionId: 'ed-1',
+      listeningMode: 'summary',
+      article: { headline: 'Parliament Approves New Energy Bill', isHeadline: false },
+    });
+
+    assert.equal(history.length, 2);
+    // Most recent is the article
+    assert.equal(history[0].articleId, 'art-101');
+    assert.equal(history[0].listeningMode, 'summary');
+    assert.equal(history[0].isCompleted, false);
+
+    // Second is the Headline Digest
+    assert.equal(history[1].articleId, null);
+    assert.equal(history[1].editionId, 'ed-1');
+    assert.equal(history[1].listeningMode, 'headlines');
+    assert.equal(history[1].isCompleted, true);
+
+    // Compute stats summary
+    const completedCount = history.filter((h) => h.isCompleted).length;
+    const inProgressCount = history.filter((h) => !h.isCompleted).length;
+    assert.equal(completedCount, 1);
+    assert.equal(inProgressCount, 1);
+  });
 });

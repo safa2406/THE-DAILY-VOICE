@@ -123,7 +123,7 @@ export default function PDFUploaderModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-[#1c1917]/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#fbf9f5] w-full max-w-md rounded-2xl shadow-2xl border border-[#eae4d9] overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-[#fbf9f5] w-full max-w-md rounded-[20px] shadow-[0_20px_50px_rgba(28,25,23,0.2)] border border-[#eae4d9] overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="p-4 border-b border-[#eae4d9] flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -132,12 +132,12 @@ export default function PDFUploaderModal({ isOpen, onClose }) {
             </div>
             <div>
               <h3 className="font-serif font-bold text-[#1c1917] text-base">Upload Newspaper PDF</h3>
-              <p className="text-[11px] font-mono text-[#78716c]">Import physical issue for audio narration</p>
+              <p className="text-xs font-mono text-[#5c534a]">Import physical issue for audio narration</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-[#78716c] hover:text-[#1c1917] rounded-full hover:bg-[#f3ece2] transition-colors"
+            className="p-2 text-[#5c534a] hover:text-[#1c1917] rounded-full hover:bg-[#f3ece2] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -162,19 +162,19 @@ export default function PDFUploaderModal({ isOpen, onClose }) {
                 <h4 className="font-serif font-semibold text-sm text-[#1c1917] max-w-[280px] truncate">
                   {selectedFile.name}
                 </h4>
-                <p className="text-[11px] font-mono text-[#78716c] mt-0.5">
+                <p className="text-xs font-mono text-[#5c534a] mt-0.5">
                   {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to process
                 </p>
               </div>
             ) : (
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-xl bg-[#f3ece2] text-[#78716c] flex items-center justify-center mb-2">
+                <div className="w-12 h-12 rounded-xl bg-[#f3ece2] text-[#5c534a] flex items-center justify-center mb-2">
                   <FileUp className="w-6 h-6" />
                 </div>
                 <p className="text-xs font-serif font-medium text-[#1c1917]">
                   Drag & drop newspaper PDF here
                 </p>
-                <p className="text-[11px] text-[#78716c] mt-1 font-mono">
+                <p className="text-xs text-[#5c534a] mt-1 font-mono">
                   Standard multi-page broadsheet editions (.pdf)
                 </p>
                 <label className="mt-4 px-4 py-2 bg-[#1c1917] hover:bg-[#292524] text-white text-xs font-medium rounded-lg cursor-pointer transition-colors shadow-xs">
@@ -201,7 +201,7 @@ export default function PDFUploaderModal({ isOpen, onClose }) {
           {/* Uploading Progress */}
           {uploadStatus === 'uploading' && (
             <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-xs font-mono text-[#78716c]">
+              <div className="flex justify-between text-xs font-mono text-[#5c534a]">
                 <span className="flex items-center space-x-1.5">
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9a3412]" />
                   <span>{statusText || 'Extracting broadsheet articles...'}</span>
@@ -226,8 +226,8 @@ export default function PDFUploaderModal({ isOpen, onClose }) {
           )}
 
           {/* Pipeline Note */}
-          <div className="mt-4 p-3 bg-[#f3ece2]/60 rounded-xl text-[11px] text-[#78716c] font-mono leading-relaxed border border-[#eae4d9]">
-            Broadsheet extraction parses layout columns, identifies articles across the 6 editorial desks, and unlocks the audio narration chapters.
+          <div className="mt-4 p-3 bg-[#f3ece2]/60 rounded-xl text-xs text-[#5c534a] font-mono leading-relaxed border border-[#eae4d9]">
+            Parses broadsheet columns and generates audio narration chapters.
           </div>
 
           {/* Upload Action Button */}
@@ -235,7 +235,7 @@ export default function PDFUploaderModal({ isOpen, onClose }) {
             <div className="mt-5 flex space-x-2">
               <button
                 onClick={() => setSelectedFile(null)}
-                className="flex-1 py-2 px-3 border border-[#eae4d9] rounded-lg text-xs font-medium text-[#78716c] hover:bg-[#f3ece2] transition-colors"
+                className="flex-1 py-2 px-3 border border-[#eae4d9] rounded-lg text-xs font-medium text-[#5c534a] hover:bg-[#f3ece2] transition-colors"
               >
                 Clear Selection
               </button>

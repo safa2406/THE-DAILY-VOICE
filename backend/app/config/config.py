@@ -1,8 +1,19 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Explicitly locate and load backend/.env regardless of the process current working directory
+_config_dir = Path(__file__).resolve().parent
+_backend_dir = _config_dir.parent.parent
+_backend_env = _backend_dir / ".env"
+_root_env = _backend_dir.parent / ".env"
+
+if _backend_env.is_file():
+    load_dotenv(dotenv_path=_backend_env, override=True)
+elif _root_env.is_file():
+    load_dotenv(dotenv_path=_root_env, override=True)
+else:
+    load_dotenv(override=True)
 
 def normalize_database_url(url: str | None) -> str:
     """
@@ -64,8 +75,8 @@ class BaseConfig:
     STORAGE_BUCKET_NEWSPAPERS = os.getenv("SUPABASE_STORAGE_BUCKET_NEWSPAPERS", "newspapers")
 
     # Groq AI Configuration
-    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    GROQ_API_KEY = (os.getenv("GROQ_API_KEY") or "").strip().strip("\"'")
+    GROQ_MODEL = (os.getenv("GROQ_MODEL") or "openai/gpt-oss-120b").strip().strip("\"'")
 
 
 class DevelopmentConfig(BaseConfig):
@@ -93,6 +104,11 @@ class TestingConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = normalize_database_url(
         os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
     )
+    from sqlalchemy.pool import StaticPool
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "poolclass": StaticPool,
+        "connect_args": {"check_same_thread": False},
+    }
     SUPABASE_AUTH_STRATEGY = "hs256"
     SUPABASE_JWT_SECRET = "test-jwt-secret-key-for-unit-testing-32-chars-minimum"
     SUPABASE_JWT_AUDIENCE = "authenticated"

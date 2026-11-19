@@ -11,19 +11,12 @@ export default function Library() {
   const [activeTab, setActiveTab] = useState('saved'); // 'saved' or 'history'
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* Editorial Library Header */}
-      <section className="bg-white rounded-3xl border border-[#eae4d9] p-6 sm:p-8 shadow-[0_2px_12px_rgba(28,25,23,0.03)]">
-        <div className="flex items-center space-x-2 text-xs font-mono text-[#78716c] uppercase mb-1">
-          <Bookmark className="w-4 h-4 text-[#9a3412]" />
-          <span>Archival Reader Collection</span>
-        </div>
+      <section className="bg-white rounded-[20px] border border-[#eae4d9] p-6 sm:p-8 shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
         <h1 className="font-serif font-black text-3xl sm:text-4xl text-[#1c1917] tracking-tight">
-          Personal Library
+          Your Library
         </h1>
-        <p className="text-xs sm:text-sm text-[#78716c] font-serif mt-1">
-          Your bookmarked broadsheet reports and archival listening timeline. Strictly segregated from active broadsheet browsing.
-        </p>
 
         {/* Tab Switcher: Saved vs History */}
         <div className="flex border-b border-[#eae4d9] mt-6 gap-6 text-sm">
@@ -33,7 +26,7 @@ export default function Library() {
             className={`pb-3 font-serif font-bold text-base transition-colors relative cursor-pointer ${
               activeTab === 'saved'
                 ? 'text-[#9a3412] border-b-2 border-[#9a3412]'
-                : 'text-[#78716c] hover:text-[#1c1917]'
+                : 'text-[#5c534a] hover:text-[#1c1917]'
             }`}
           >
             <span>Saved Stories ({savedArticles.length})</span>
@@ -44,7 +37,7 @@ export default function Library() {
             className={`pb-3 font-serif font-bold text-base transition-colors relative cursor-pointer ${
               activeTab === 'history'
                 ? 'text-[#9a3412] border-b-2 border-[#9a3412]'
-                : 'text-[#78716c] hover:text-[#1c1917]'
+                : 'text-[#5c534a] hover:text-[#1c1917]'
             }`}
           >
             <span>Listening History ({listeningHistory.length})</span>
@@ -62,16 +55,16 @@ export default function Library() {
               ))}
             </div>
           ) : (
-            /* Meaningful Empty State */
-            <div className="p-12 sm:p-16 bg-white rounded-3xl border border-[#eae4d9] text-center max-w-md mx-auto space-y-4 shadow-sm">
+            /* Clean Editorial Empty State */
+            <div className="p-12 sm:p-16 bg-white rounded-[20px] border border-[#eae4d9] text-center max-w-md mx-auto space-y-4 shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
               <div className="w-16 h-16 rounded-2xl bg-[#fbeee6] text-[#9a3412] flex items-center justify-center mx-auto shadow-inner">
                 <Bookmark className="w-8 h-8" />
               </div>
               <h3 className="font-serif font-black text-2xl text-[#1c1917]">
-                Your Library is Empty
+                No Saved Stories
               </h3>
-              <p className="text-xs sm:text-sm text-[#78716c] font-serif leading-relaxed">
-                You haven't bookmarked any broadsheet stories yet. Tap the bookmark icon while browsing to save articles here for later offline listening.
+              <p className="text-xs sm:text-sm text-[#5c534a] font-serif leading-relaxed">
+                Bookmark articles to listen to or read later.
               </p>
               <button
                 type="button"
@@ -79,7 +72,7 @@ export default function Library() {
                 className="inline-flex items-center space-x-2 px-6 py-3 bg-[#9a3412] hover:bg-[#7c2d12] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
                 <Compass className="w-4 h-4" />
-                <span>Explore Today's Stories</span>
+                <span>Browse Stories</span>
               </button>
             </div>
           )}
@@ -92,17 +85,17 @@ export default function Library() {
           {listeningHistory.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {listeningHistory.map((item) => (
-                <ListeningProgressCard key={item.articleId || item.id} item={item} />
+                <ListeningProgressCard key={item.id || item.articleId || `digest-${item.editionId}`} item={item} />
               ))}
             </div>
           ) : (
-            <div className="p-12 sm:p-16 bg-white rounded-3xl border border-[#eae4d9] text-center max-w-md mx-auto space-y-3 shadow-sm">
-              <Clock className="w-12 h-12 text-[#a8a29e] mx-auto opacity-50" />
+            <div className="p-12 sm:p-16 bg-white rounded-[20px] border border-[#eae4d9] text-center max-w-md mx-auto space-y-3 shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
+              <Clock className="w-12 h-12 text-[#5c534a] mx-auto opacity-50" />
               <h3 className="font-serif font-black text-xl text-[#1c1917]">
                 No Listening History
               </h3>
-              <p className="text-xs text-[#78716c] font-serif">
-                Start listening to newspaper articles and your playback timestamps will be preserved here.
+              <p className="text-xs text-[#5c534a] font-serif">
+                Articles you listen to will appear here.
               </p>
             </div>
           )}

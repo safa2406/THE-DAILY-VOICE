@@ -14,7 +14,7 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Primary Navigation"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-[#faf7f2]/95 backdrop-blur-md border-t border-[#eae4d9] shadow-[0_-4px_20px_rgba(28,25,23,0.04)]"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-[#faf7f2]/95 backdrop-blur-md border-t border-[#eae4d9] shadow-[0_-4px_20px_rgba(28,25,23,0.04)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="max-w-md md:max-w-2xl mx-auto flex items-center justify-around h-16 px-2">
@@ -25,7 +25,7 @@ export default function BottomNav() {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1.5 transition-all duration-200 relative group ${
+                `flex flex-col items-center justify-center flex-1 h-full py-1.5 transition-all duration-200 relative group outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#9a3412]/60 focus-visible:ring-offset-2 focus-visible:rounded-2xl ${
                   isActive
                     ? 'text-[#9a3412] font-semibold'
                     : 'text-[#78716c] hover:text-[#1c1917]'
@@ -35,13 +35,13 @@ export default function BottomNav() {
               {({ isActive }) => (
                 <>
                   <div
-                    className={`p-1 rounded-xl transition-all ${
-                      isActive ? 'bg-[#fbeee6] text-[#9a3412]' : 'group-hover:bg-[#f3ece2]'
+                    className={`px-3 py-1 rounded-full transition-all duration-200 ${
+                      isActive ? 'bg-[#fbeee6] text-[#9a3412]' : 'group-hover:bg-[#f3ece2]/70 text-[#78716c]'
                     }`}
                   >
                     <Icon
                       className={`w-5 h-5 transition-transform ${
-                        isActive ? 'scale-110 stroke-[2.3]' : 'stroke-[1.8]'
+                        isActive ? 'scale-105 stroke-[2.2]' : 'stroke-[1.75]'
                       }`}
                     />
                   </div>
@@ -49,7 +49,7 @@ export default function BottomNav() {
                     {item.label}
                   </span>
                   {isActive && (
-                    <span className="absolute top-1.5 w-1 h-1 rounded-full bg-[#9a3412]" />
+                    <span className="absolute top-1 w-1 h-1 rounded-full bg-[#9a3412]" />
                   )}
                 </>
               )}

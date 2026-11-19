@@ -23,14 +23,14 @@ export default function Categories() {
 
   if (!selectedEdition) {
     return (
-      <div className="bg-white rounded-3xl border border-[#eae4d9] p-8 sm:p-12 text-center max-w-xl mx-auto my-12 shadow-[0_4px_24px_rgba(28,25,23,0.04)] animate-in fade-in duration-300">
+      <div className="bg-white rounded-[20px] border border-[#eae4d9] p-8 sm:p-12 text-center max-w-xl mx-auto my-12 shadow-[0_4px_20px_rgba(28,25,23,0.04)] animate-in fade-in duration-300">
         <div className="w-16 h-16 rounded-2xl bg-[#fbeee6] text-[#9a3412] flex items-center justify-center mx-auto mb-4">
           <Newspaper className="w-8 h-8" />
         </div>
         <h2 className="font-serif font-black text-2xl sm:text-3xl text-[#1c1917] mb-2">
           No Newspaper Edition Loaded
         </h2>
-        <p className="text-sm font-serif text-[#78716c] mb-6 leading-relaxed">
+        <p className="text-sm font-serif text-[#5c534a] mb-6 leading-relaxed">
           Scan a broadsheet QR code or upload a newspaper PDF to explore articles by editorial desk.
         </p>
         <button
@@ -46,41 +46,30 @@ export default function Categories() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Header with Persistent Edition Context */}
-      <section className="bg-white rounded-3xl border border-[#eae4d9] p-6 sm:p-8 shadow-[0_2px_12px_rgba(28,25,23,0.03)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-[#eae4d9]">
-          <div className="flex items-center space-x-2 text-xs font-mono text-[#78716c]">
-            <Newspaper className="w-4 h-4 text-[#9a3412]" />
-            <span className="font-serif font-bold text-[#1c1917] text-sm">{selectedEdition.name}</span>
-            <span>•</span>
-            <span>{selectedEdition.date}</span>
-          </div>
-          <span className="text-[11px] font-mono text-[#9a3412] bg-[#fbeee6] px-3 py-1 rounded-full w-fit font-bold">
-            Persistent Edition Context
-          </span>
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
+      {/* Header */}
+      <section className="bg-white rounded-[20px] border border-[#eae4d9] p-6 sm:p-8 shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
+        <div className="flex items-center space-x-2 text-xs font-mono text-[#5c534a] pb-4 mb-4 border-b border-[#eae4d9]">
+          <Newspaper className="w-4 h-4 text-[#9a3412]" />
+          <span className="font-serif font-bold text-[#1c1917] text-sm">{selectedEdition.name}</span>
+          <span>•</span>
+          <span>{selectedEdition.date}</span>
         </div>
 
         <div>
           <h1 className="font-serif font-black text-3xl sm:text-4xl text-[#1c1917] tracking-tight">
-            Browse Newspaper Desks
+            Browse Sections
           </h1>
-          <p className="text-xs sm:text-sm text-[#78716c] font-serif mt-1">
-            Explore articles organized across six editorial desks. Audio narration is prepared for all stories.
-          </p>
         </div>
       </section>
 
       {/* The 6 Broadside Desks / Categories Grid */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-mono uppercase tracking-wider text-[#78716c] font-bold flex items-center space-x-2">
+          <h2 className="text-xs font-mono uppercase tracking-wider text-[#5c534a] font-bold flex items-center space-x-2">
             <Layers className="w-4 h-4 text-[#9a3412]" />
-            <span>Select Editorial Desk ({CATEGORIES.length})</span>
+            <span>Sections</span>
           </h2>
-          <span className="text-xs font-mono text-[#78716c] hidden sm:inline">
-            Tap to view stories
-          </span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
@@ -108,16 +97,11 @@ export default function Categories() {
       {/* Active Section Stories */}
       <section className="space-y-4">
         <div className="flex items-center justify-between pt-4 border-t border-[#eae4d9]">
-          <div>
-            <span className="text-[10px] font-mono tracking-widest uppercase text-[#9a3412] font-bold block">
-              Active Section
-            </span>
-            <h2 className="font-serif font-black text-2xl sm:text-3xl text-[#1c1917]">
-              {activeCategory.name}
-            </h2>
-          </div>
-          <span className="text-xs font-mono text-[#78716c] bg-white px-3 py-1 rounded-full border border-[#eae4d9]">
-            {filteredArticles.length} {filteredArticles.length === 1 ? 'Report' : 'Reports'} Available
+          <h2 className="font-serif font-black text-2xl sm:text-3xl text-[#1c1917]">
+            {activeCategory.name}
+          </h2>
+          <span className="text-xs font-mono text-[#5c534a] bg-white px-3 py-1 rounded-full border border-[#eae4d9]">
+            {filteredArticles.length} {filteredArticles.length === 1 ? 'Article' : 'Articles'}
           </span>
         </div>
 
@@ -128,12 +112,12 @@ export default function Categories() {
             ))}
           </div>
         ) : (
-          <div className="p-10 bg-white rounded-3xl border border-[#eae4d9] text-center space-y-3">
-            <BookOpen className="w-10 h-10 text-[#a8a29e] mx-auto opacity-50" />
+          <div className="p-10 bg-white rounded-[20px] border border-[#eae4d9] text-center space-y-3 shadow-[0_4px_20px_rgba(28,25,23,0.04)]">
+            <BookOpen className="w-10 h-10 text-[#5c534a] mx-auto opacity-50" />
             <p className="font-serif font-bold text-lg text-[#1c1917]">
               No articles currently filed under {activeCategory.name} for this issue.
             </p>
-            <p className="text-xs text-[#78716c] font-mono">
+            <p className="text-xs text-[#5c534a] font-mono">
               Try selecting another newspaper section or switch to the Weekend Edition.
             </p>
             <button

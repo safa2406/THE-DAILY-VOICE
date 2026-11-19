@@ -73,14 +73,14 @@ export default function Header() {
         {/* Brand Masthead */}
         <Link to="/" className="flex items-center space-x-2.5 sm:space-x-3 group shrink-0">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1c1917] to-[#292524] text-[#faf7f2] flex items-center justify-center shadow-md group-hover:from-[#9a3412] group-hover:to-[#7c2d12] transition-all duration-300">
-            <Radio className="w-5 h-5 text-[#ea580c] group-hover:text-white transition-colors" />
+            <Radio className="w-5 h-5 text-[#9a3412] group-hover:text-white transition-colors" />
           </div>
           <div className="flex flex-col">
             <span className="font-serif font-black text-lg sm:text-2xl tracking-tight text-[#1c1917] leading-tight">
               The Daily Voice
             </span>
             <span className="text-[9px] sm:text-[10px] uppercase font-mono tracking-wider text-[#9a3412] -mt-0.5 font-semibold">
-              Newspaper to Audiobook
+              The Audio Broadsheet
             </span>
           </div>
         </Link>
@@ -124,11 +124,8 @@ export default function Header() {
             >
               <div className="px-3 py-2 border-b border-[#f3ece2] mb-1">
                 <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-[#9a3412]">
-                  Newspaper Editions
+                  Your Editions
                 </span>
-                <p className="text-[11px] text-[#78716c] font-serif">
-                  Select an issue to update headlines and articles across the application.
-                </p>
               </div>
 
               <div className="space-y-1">
@@ -137,9 +134,9 @@ export default function Header() {
                     <div className="w-10 h-10 rounded-full bg-[#f3ece2] text-[#9a3412] flex items-center justify-center mx-auto mb-2">
                       <Newspaper className="w-5 h-5" />
                     </div>
-                    <p className="font-serif font-semibold text-sm text-[#1c1917]">No Newspapers Added Yet</p>
+                    <p className="font-serif font-semibold text-sm text-[#1c1917]">No Editions Added</p>
                     <p className="font-sans text-xs text-[#78716c] mt-1 leading-relaxed">
-                      Scan a newspaper QR code or upload a broadsheet PDF to add an edition.
+                      Scan a broadsheet QR code or upload a PDF to begin.
                     </p>
                   </div>
                 ) : (
@@ -158,7 +155,7 @@ export default function Header() {
                       onClick={() => handleSelectEdition(edition)}
                       className={`w-full text-left p-2.5 rounded-xl transition-all duration-150 flex items-start justify-between cursor-pointer group ${
                         isSelected
-                          ? 'bg-[#fbeee6] text-[#9a3412] font-semibold border border-[#ea580c]/20'
+                          ? 'bg-[#fbeee6] text-[#9a3412] font-semibold border border-[#9a3412]/20'
                           : 'hover:bg-[#faf7f2] text-[#44403c] border border-transparent'
                       }`}
                     >
@@ -166,7 +163,7 @@ export default function Header() {
                         <div
                           className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 text-xs transition-colors ${
                             isSelected
-                              ? 'bg-[#ea580c] text-white'
+                              ? 'bg-[#9a3412] text-white'
                               : 'bg-[#f3ece2] text-[#78716c] group-hover:text-[#1c1917]'
                           }`}
                         >

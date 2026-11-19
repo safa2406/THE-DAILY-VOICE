@@ -1,11 +1,23 @@
 import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Ensure backend root is in sys.path
 backend_dir = Path(__file__).resolve().parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
+
+# Ensure backend/.env is loaded before creating the app
+env_file = backend_dir / ".env"
+if env_file.is_file():
+    load_dotenv(dotenv_path=env_file, override=True)
+else:
+    root_env = backend_dir.parent / ".env"
+    if root_env.is_file():
+        load_dotenv(dotenv_path=root_env, override=True)
+    else:
+        load_dotenv(override=True)
 
 from app import create_app
 

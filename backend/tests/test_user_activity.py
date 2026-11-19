@@ -846,3 +846,256 @@ def test_dashboard_statistics_scenarios_a_through_e(client, app, seed_test_data)
     assert stats_e["total_in_progress"] == 0
     assert client.get("/api/bookmarks", headers=headers_b).get_json()["count"] == 0
     assert client.get("/api/history", headers=headers_b).get_json()["count"] == 0
+
+
+def test_headline_digest_tracking_and_persistence_scenarios_a_through_e(client, app, seed_test_data):
+    """
+    Comprehensive verification for Headline Digest listening sessions:
+    - Treats Headline Digest as an edition-level digest (listening_mode: 'headlines')
+    - Tracks user_id, edition_id, listening_mode, language, progress_seconds, duration_seconds,
+      listened_delta_seconds, and completion status.
+    - Scenario A: Start digest, listen for 20s, pause. Time Today increases by 20s, in-progress=1.
+    - Scenario B: Resume and listen to completion. Completed count increases by 1, marked finished.
+    - Scenario C: Replaying does not un-complete (sticky completion).
+    - Scenario D: Coexistence with individual articles (1 digest + 1 article).
+    - Scenario E: Logout/login persistence and strict two-user account isolation.
+    """
+    today_local = "2026-11-19"
+    ed1_id = str(seed_test_data["edition1"].id)
+    ed2_id = str(seed_test_data["edition2"].id)
+    art1_id = str(seed_test_data["art1"].id)
+
+    # 1. Login User A
+    login_a = client.post("/api/auth/login", json={"email": "digest-user-a@dailyvoice.com"}).get_json()
+    headers_a = {"Authorization": f"Bearer {login_a['session']['access_token']}"}
+
+    # Acquire edition for User A
+    client.post("/api/user/editions", headers=headers_a, json={"edition_id": ed1_id, "source": "qr_scan"})
+
+    # --- Scenario A: Start Headline Digest, listen for 20 seconds, pause ---
+    start_res = client.post(
+        "/api/history",
+        headers=headers_a,
+        json={
+            "edition_id": ed1_id,
+            "listening_mode": "headlines",
+            "language": "English",
+            "progress_seconds": 20.0,
+            "duration_seconds": 240,
+            "listened_delta_seconds": 20.0,
+            "local_date": today_local,
+            "is_edition": True,
+        },
+    )
+    assert start_res.status_code == 200
+    start_data = start_res.get_json()["data"]
+    assert start_data["articleId"] is None
+    assert start_data["editionId"] == ed1_id
+    assert start_data["listeningMode"] == "headlines"
+    assert start_data["progressSeconds"] == 20.0
+    assert start_data["durationSeconds"] == 240
+    assert start_data["isCompleted"] is False
+    assert start_data["article"]["isEdition"] is True
+    assert "Headline Digest" in start_data["article"]["headline"]
+
+    stats_a = start_res.get_json()["stats"]
+    assert stats_a["time_today_seconds"] == 20.0
+    assert stats_a["time_today_display"] == "20s"
+    assert stats_a["total_in_progress"] == 1
+    assert stats_a["total_completed"] == 0
+
+    # Verify history list includes the Headline Digest card representation
+    hist_a = client.get("/api/history", headers=headers_a).get_json()
+    assert hist_a["count"] == 1
+    h_item = hist_a["history"][0]
+    assert h_item["editionId"] == ed1_id
+    assert h_item["listeningMode"] == "headlines"
+    assert h_item["article"]["isEdition"] is True
+
+    # --- Scenario B: Resume and listen until completion ---
+    complete_res = client.post(
+        "/api/history",
+        headers=headers_a,
+        json={
+            "edition_id": ed1_id,
+            "listening_mode": "headlines",
+            "language": "English",
+            "progress_seconds": 240.0,
+            "duration_seconds": 240,
+            "listened_delta_seconds": 220.0,
+            "local_date": today_local,
+            "is_completed": True,
+            "is_edition": True,
+        },
+    )
+    assert complete_res.status_code == 200
+    comp_data = complete_res.get_json()["data"]
+    assert comp_data["isCompleted"] is True
+    assert comp_data["totalListenedSeconds"] == 240.0
+
+    stats_b = complete_res.get_json()["stats"]
+    assert stats_b["time_today_seconds"] == 240.0
+    assert stats_b["time_today_display"] == "4m"
+    assert stats_b["total_completed"] == 1
+    assert stats_b["total_in_progress"] == 0
+
+    # --- Scenario C: Replaying does not un-complete (sticky completion) ---
+    replay_res = client.post(
+        "/api/history",
+        headers=headers_a,
+        json={
+            "edition_id": ed1_id,
+            "listening_mode": "headlines",
+            "language": "English",
+            "progress_seconds": 0.0,
+            "duration_seconds": 240,
+            "listened_delta_seconds": 0.0,
+            "local_date": today_local,
+            "is_completed": False,
+            "is_edition": True,
+        },
+    )
+    stats_c = replay_res.get_json()["stats"]
+    assert stats_c["total_completed"] == 1
+    assert stats_c["total_in_progress"] == 0
+    assert replay_res.get_json()["data"]["isCompleted"] is True
+
+    # --- Scenario D: Coexistence with individual article listening ---
+    # Listen to an individual article for 60s
+    art_res = client.post(
+        "/api/history",
+        headers=headers_a,
+        json={
+            "article_id": art1_id,
+            "edition_id": ed1_id,
+            "listening_mode": "summary",
+            "language": "English",
+            "progress_seconds": 60.0,
+            "duration_seconds": 180,
+            "listened_delta_seconds": 60.0,
+            "local_date": today_local,
+            "is_completed": False,
+        },
+    )
+    stats_d = art_res.get_json()["stats"]
+    assert stats_d["time_today_seconds"] == 300.0  # 240s digest + 60s article
+    assert stats_d["time_today_display"] == "5m"
+    assert stats_d["total_completed"] == 1  # Digest completed
+    assert stats_d["total_in_progress"] == 1  # Article in progress
+    assert stats_d["total_sessions"] == 2
+
+    hist_d = client.get("/api/history", headers=headers_a).get_json()
+    assert hist_d["count"] == 2
+    modes = {item["listeningMode"] for item in hist_d["history"]}
+    assert "headlines" in modes
+    assert "summary" in modes
+
+    # --- Scenario E: Logout/Login Persistence and User Isolation ---
+    # User A relogins
+    relogin_a = client.post("/api/auth/login", json={"email": "digest-user-a@dailyvoice.com"}).get_json()
+    headers_a2 = {"Authorization": f"Bearer {relogin_a['session']['access_token']}"}
+
+    hist_restored = client.get("/api/history", headers=headers_a2).get_json()
+    assert hist_restored["count"] == 2
+    digest_item = next(h for h in hist_restored["history"] if h["listeningMode"] == "headlines")
+    assert digest_item["editionId"] == ed1_id
+    assert digest_item["isCompleted"] is True
+    assert digest_item["article"]["isEdition"] is True
+
+    stats_restored = client.get(f"/api/history/stats?local_date={today_local}", headers=headers_a2).get_json()["stats"]
+    assert stats_restored["time_today_seconds"] == 300.0
+    assert stats_restored["total_completed"] == 1
+    assert stats_restored["total_in_progress"] == 1
+
+    # User B logs in (strict isolation)
+    login_b = client.post("/api/auth/login", json={"email": "digest-user-b@dailyvoice.com"}).get_json()
+    headers_b = {"Authorization": f"Bearer {login_b['session']['access_token']}"}
+
+    stats_b_empty = client.get(f"/api/history/stats?local_date={today_local}", headers=headers_b).get_json()["stats"]
+    assert stats_b_empty["time_today_seconds"] == 0.0
+    assert stats_b_empty["total_completed"] == 0
+    assert stats_b_empty["total_in_progress"] == 0
+    assert client.get("/api/history", headers=headers_b).get_json()["count"] == 0
+
+
+def test_headline_digest_resilience_to_variant_identifiers_and_stale_mode(client, app, seed_test_data):
+    """
+    Verifies that Headline Digest tracking succeeds under real-world frontend variations:
+    1. edition_id passed with '-headlines' suffix.
+    2. edition_id passed as edition_code (e.g. 'ED001').
+    3. edition_id passed as compound 'ED001 • The Times'.
+    4. listening_mode passed as 'summary' while is_edition=True and article_id=None.
+    """
+    today_local = "2026-11-19"
+    ed1 = seed_test_data["edition1"]
+    ed1_id = str(ed1.id)
+
+    login = client.post("/api/auth/login", json={"email": "resilience-user@dailyvoice.com"}).get_json()
+    headers = {"Authorization": f"Bearer {login['session']['access_token']}"}
+
+    # Variant 1: -headlines suffix + stale 'summary' mode
+    res1 = client.post(
+        "/api/history",
+        headers=headers,
+        json={
+            "edition_id": f"{ed1_id}-headlines",
+            "article_id": None,
+            "listening_mode": "summary",
+            "is_edition": True,
+            "progress_seconds": 15.0,
+            "duration_seconds": 240,
+            "listened_delta_seconds": 15.0,
+            "local_date": today_local,
+        },
+    )
+    assert res1.status_code == 200
+    data1 = res1.get_json()["data"]
+    assert data1["editionId"] == ed1_id
+    assert data1["listeningMode"] == "headlines"
+    assert data1["articleId"] is None
+    assert res1.get_json()["stats"]["time_today_seconds"] == 15.0
+    assert res1.get_json()["stats"]["total_in_progress"] == 1
+
+    # Variant 2: edition_code instead of UUID
+    res2 = client.post(
+        "/api/history",
+        headers=headers,
+        json={
+            "edition_id": ed1.edition_code,
+            "article_id": None,
+            "is_edition": True,
+            "progress_seconds": 35.0,
+            "duration_seconds": 240,
+            "listened_delta_seconds": 20.0,
+            "local_date": today_local,
+        },
+    )
+    assert res2.status_code == 200
+    data2 = res2.get_json()["data"]
+    assert data2["editionId"] == ed1_id
+    assert res2.get_json()["stats"]["time_today_seconds"] == 35.0
+
+    # Variant 3: composite 'ED001 • The Times'
+    res3 = client.post(
+        "/api/history",
+        headers=headers,
+        json={
+            "edition_id": f"{ed1.edition_code} • {ed1.newspaper_name}",
+            "article_id": None,
+            "is_edition": True,
+            "progress_seconds": 240.0,
+            "duration_seconds": 240,
+            "listened_delta_seconds": 205.0,
+            "local_date": today_local,
+            "is_completed": True,
+        },
+    )
+    assert res3.status_code == 200
+    data3 = res3.get_json()["data"]
+    assert data3["editionId"] == ed1_id
+    assert data3["isCompleted"] is True
+    assert res3.get_json()["stats"]["total_completed"] == 1
+    assert res3.get_json()["stats"]["total_in_progress"] == 0
+    assert res3.get_json()["stats"]["time_today_display"] == "4m"
+
+

@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useAudio, SUPPORTED_LANGUAGES } from '../context/AudioContext';
 import { useLibrary } from '../context/LibraryContext';
+import AskAiModal from './AskAiModal';
+import AudioProgressBar from './AudioProgressBar';
 
 export default function FullAudioPlayer() {
   const {
@@ -88,15 +90,15 @@ export default function FullAudioPlayer() {
           <button
             type="button"
             onClick={closeFullPlayer}
-            className="p-2 -ml-2 text-[#78716c] hover:text-[#1c1917] rounded-full hover:bg-[#f3ece2] transition-colors cursor-pointer"
+            className="p-2 -ml-2 text-[#5c534a] hover:text-[#1c1917] rounded-full hover:bg-[#f3ece2] transition-colors cursor-pointer"
             title="Minimize Player"
           >
             <ChevronDown className="w-5 h-5" />
           </button>
 
           <div className="text-center px-2">
-            <span className="text-[10px] uppercase font-mono tracking-widest text-[#9a3412] font-semibold block">
-              Now Narrating
+            <span className="text-xs uppercase font-mono tracking-widest text-[#9a3412] font-semibold block">
+              Now Playing
             </span>
             <span className="text-xs font-serif font-bold text-[#1c1917] truncate max-w-[240px] inline-block">
               {currentArticle.newspaperName || currentArticle.publisher || 'The Daily Voice'}
@@ -109,7 +111,7 @@ export default function FullAudioPlayer() {
             className={`p-2 rounded-xl transition-all cursor-pointer ${
               bookmarked
                 ? 'text-[#9a3412] bg-[#fbeee6]'
-                : 'text-[#78716c] hover:text-[#1c1917] hover:bg-[#f3ece2]'
+                : 'text-[#5c534a] hover:text-[#1c1917] hover:bg-[#f3ece2]'
             }`}
             title={bookmarked ? 'Saved in Library' : 'Save to Library'}
           >
@@ -125,11 +127,11 @@ export default function FullAudioPlayer() {
             className={`flex-1 py-3 flex items-center justify-center space-x-2 border-b-2 transition-all cursor-pointer ${
               activeTab === 'player'
                 ? 'border-[#9a3412] text-[#9a3412] font-semibold bg-white'
-                : 'border-transparent text-[#78716c] hover:text-[#1c1917]'
+                : 'border-transparent text-[#5c534a] hover:text-[#1c1917]'
             }`}
           >
             <Volume2 className="w-4 h-4" />
-            <span>Audio Player</span>
+            <span>Audio</span>
           </button>
           <button
             type="button"
@@ -137,11 +139,11 @@ export default function FullAudioPlayer() {
             className={`flex-1 py-3 flex items-center justify-center space-x-2 border-b-2 transition-all cursor-pointer ${
               activeTab === 'read'
                 ? 'border-[#9a3412] text-[#9a3412] font-semibold bg-white'
-                : 'border-transparent text-[#78716c] hover:text-[#1c1917]'
+                : 'border-transparent text-[#5c534a] hover:text-[#1c1917]'
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Read Story</span>
+            <span>Text</span>
           </button>
         </div>
 
@@ -156,7 +158,7 @@ export default function FullAudioPlayer() {
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
                   listeningMode === 'summary'
                     ? 'bg-white text-[#9a3412] shadow-xs font-bold'
-                    : 'text-[#78716c] hover:text-[#1c1917]'
+                    : 'text-[#5c534a] hover:text-[#1c1917]'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -169,7 +171,7 @@ export default function FullAudioPlayer() {
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
                   listeningMode === 'full'
                     ? 'bg-white text-[#9a3412] shadow-xs font-bold'
-                    : 'text-[#78716c] hover:text-[#1c1917]'
+                    : 'text-[#5c534a] hover:text-[#1c1917]'
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -217,7 +219,7 @@ export default function FullAudioPlayer() {
               <h2 className="text-2xl sm:text-3xl font-serif font-black text-[#1c1917] leading-tight mb-2">
                 {currentArticle.title || currentArticle.headline || currentArticle.name}
               </h2>
-              <p className="text-xs text-[#78716c] mb-5 font-mono">
+              <p className="text-xs text-[#5c534a] mb-5 font-mono">
                 {currentArticle.publisher || currentArticle.newspaperName} {currentArticle.publishDate ? `• ${currentArticle.publishDate}` : ''}
               </p>
 
@@ -237,23 +239,14 @@ export default function FullAudioPlayer() {
                 )}
               </div>
 
-              {/* Scrubber Progress Bar */}
+              {/* Spotify-inspired Audio Progress Bar */}
               <div className="w-full mb-6">
-                <div className="relative flex items-center">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={progressPercent || 0}
-                    onChange={handleSliderChange}
-                    className="w-full h-2.5 bg-[#eae4d9] rounded-lg appearance-none cursor-pointer accent-[#9a3412]"
-                  />
-                </div>
-                <div className="flex justify-between text-xs font-mono text-[#78716c] mt-2 font-medium">
-                  <span>{formattedCurrentTime}</span>
-                  <span className="text-[#a8a29e]">{formatRemaining(remainingSeconds)}</span>
-                  <span>{formattedDuration}</span>
-                </div>
+                <AudioProgressBar
+                  currentTime={currentTime}
+                  duration={duration}
+                  onSeek={seek}
+                  disabled={isLoading}
+                />
               </div>
 
               {/* Tactile Audio Transport Controls */}
@@ -274,7 +267,7 @@ export default function FullAudioPlayer() {
                   type="button"
                   onClick={togglePlayPause}
                   disabled={isLoading}
-                  className="w-20 h-20 rounded-full bg-gradient-to-br from-[#ea580c] to-[#9a3412] hover:from-[#f97316] hover:to-[#ea580c] text-white flex items-center justify-center shadow-[0_8px_25px_rgba(234,88,12,0.35)] transition-all active:scale-95 cursor-pointer disabled:opacity-75"
+                  className="w-20 h-20 rounded-full bg-[#9a3412] hover:bg-[#7c2d12] text-white flex items-center justify-center shadow-[0_8px_25px_rgba(154,52,18,0.35)] transition-all active:scale-95 cursor-pointer disabled:opacity-75"
                   title={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isLoading ? (
@@ -323,7 +316,7 @@ export default function FullAudioPlayer() {
                       <Gauge className="w-3.5 h-3.5 text-[#9a3412]" />
                       <span>{playbackSpeed}x Speed</span>
                     </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#78716c]" />
+                    <ChevronDown className="w-3.5 h-3.5 text-[#5c534a]" />
                   </button>
 
                   {showSpeedMenu && (
@@ -359,7 +352,7 @@ export default function FullAudioPlayer() {
                       <Languages className="w-3.5 h-3.5 text-[#9a3412]" />
                       <span className="truncate">{language}</span>
                     </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#78716c]" />
+                    <ChevronDown className="w-3.5 h-3.5 text-[#5c534a]" />
                   </button>
 
                   {showLangMenu && (
@@ -378,7 +371,7 @@ export default function FullAudioPlayer() {
                         >
                           <div>
                             <span className="font-semibold">{lang.name}</span>
-                            <span className="text-[10px] text-[#78716c] ml-1.5 font-sans">({lang.label})</span>
+                            <span className="text-xs text-[#5c534a] ml-1.5 font-sans">({lang.label})</span>
                           </div>
                           {language === lang.id && <Check className="w-3.5 h-3.5 text-[#9a3412]" />}
                         </button>
@@ -388,30 +381,27 @@ export default function FullAudioPlayer() {
                 </div>
               </div>
 
-              {/* Ask AI Preview Button */}
+              {/* Redesigned Ask AI Button */}
               <button
                 type="button"
                 onClick={() => setShowAiModal(true)}
-                className="w-full py-3 px-4 rounded-2xl border border-dashed border-[#ea580c]/50 bg-gradient-to-r from-[#fff7ed] to-[#ffedd5] hover:from-[#ffedd5] hover:to-[#fed7aa] text-[#9a3412] text-xs font-medium flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-xs active:scale-[0.99]"
+                className="w-full py-2.5 px-4 rounded-xl border border-[#e7dfd1] bg-[#fbf8f3] hover:bg-[#f3ece0] hover:border-[#d6cebf] text-[#1c1917] hover:text-[#9a3412] text-xs font-medium flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-xs active:scale-[0.99] group"
               >
-                <Sparkles className="w-4 h-4 text-[#ea580c]" />
-                <span className="font-semibold">Ask AI About This Story</span>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white/80 text-[#9a3412] border border-[#fed7aa] font-bold">
-                  V2 Preview
-                </span>
+                <Sparkles className="w-4 h-4 text-[#9a3412] transition-transform group-hover:scale-110" />
+                <span className="font-serif font-semibold tracking-wide">Ask AI</span>
               </button>
             </div>
           ) : (
             /* Full Article Text Read-Along */
             <div className="space-y-6 text-left max-w-prose mx-auto">
               <div className="border-b border-[#eae4d9] pb-4">
-                <span className="text-[11px] font-mono tracking-wider uppercase text-[#9a3412] font-semibold">
+                <span className="text-xs font-mono tracking-wider uppercase text-[#9a3412] font-semibold">
                   {currentArticle.category || 'Broadsheet'}
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-serif font-black text-[#1c1917] mt-1 leading-tight">
                   {currentArticle.title || currentArticle.headline}
                 </h3>
-                <p className="text-xs text-[#78716c] font-mono mt-1">
+                <p className="text-xs text-[#5c534a] font-mono mt-1">
                   Reported by {currentArticle.publisher || currentArticle.newspaperName} {currentArticle.publishDate ? `• ${currentArticle.publishDate}` : ''}
                 </p>
               </div>
@@ -442,32 +432,13 @@ export default function FullAudioPlayer() {
         </div>
       </div>
 
-      {/* Ask AI Information Dialog */}
-      {showAiModal && (
-        <div className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-[#eae4d9] animate-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 rounded-2xl bg-[#ffedd5] text-[#ea580c] flex items-center justify-center mx-auto mb-3 shadow-inner">
-              <Sparkles className="w-7 h-7" />
-            </div>
-            <h4 className="font-serif font-bold text-xl text-[#1c1917] mb-1">
-              Ask AI Assistant
-            </h4>
-            <p className="text-xs font-mono font-semibold text-[#ea580c] mb-3">
-              Roadmap Feature: Version 2
-            </p>
-            <p className="text-xs text-[#78716c] leading-relaxed mb-6 font-serif">
-              AI-powered question answering and conversational follow-ups will arrive in Version 2 powered by Groq Llama 3.3.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowAiModal(false)}
-              className="w-full py-2.5 bg-[#1c1917] hover:bg-[#2e2a27] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-            >
-              Understood
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Ask AI Chat Interface Dialog */}
+      <AskAiModal
+        isOpen={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        article={currentArticle}
+        currentLanguage={language}
+      />
     </div>
   );
 }
